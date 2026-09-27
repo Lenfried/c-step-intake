@@ -14,7 +14,7 @@
   <property name="allow_discussion">False</property>
 
   <!-- Applications may only be created inside the intake folder. -->
-  <property name="global_allow">False</property>
+  <property name="global_allow">True</property>
   <property name="filter_content_types">True</property>
   <property name="allowed_content_types"/>
 

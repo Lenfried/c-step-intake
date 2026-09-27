@@ -10,7 +10,7 @@ long_description = '\n\n'.join([
 
 
 setup(
-    name='c-step-intake',
+    name='c-step-intake-core',
     version='1.0.0a1',
     description='STEP and CSTEP student application intake for York College',
     long_description=long_description,
@@ -59,7 +59,8 @@ setup(
         ],
     },
     entry_points="""
-    [z3c.autoinclude.plugin]
+    [plone.autoinclude.plugin]
     target = plone
+    module = c_step_intake
     """,
 )
