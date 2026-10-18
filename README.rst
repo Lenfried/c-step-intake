@@ -68,6 +68,21 @@ development is not yet authorised. Its entries in ``field_map.py`` are
 provisional and have not been checked against anything live.
 
 
+New-application email
+=====================
+
+When an application is first submitted, the add-on emails the address in the
+registry record ``c_step_intake.notification_email`` (default
+``cstep-n8n@mailings.york.cuny.edu``; edit it in Site Setup -> Configuration
+Registry, or empty it to turn notifications off). The message has a link and
+the automatic check's outcome, and no applicant details. Resubmissions do not
+send one, and a mail failure is logged rather than blocking the submission.
+
+Plone must have SMTP configured (Site Setup -> Mail) for this to send.
+Sites that already have the profile installed need the registry record
+added by re-importing the ``registry`` step of ``c_step_intake:default``.
+
+
 Enabling CSTEP
 ==============
 
