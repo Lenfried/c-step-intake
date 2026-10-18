@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<rolemap>
+  <roles>
+    <!-- Program staff read and triage applications. -->
+    <role name="ProgramStaff"/>
+    <!-- The director is the only non-admin role that can accept or reject. -->
+    <role name="ProgramDirector"/>
+  </roles>
+  <permissions>
+
+    <!-- Applications are created by the applicant inside the intake folder.
+         Grant Contributor on that folder only, never site-wide. -->
+    <permission name="c_step_intake: Add STEP Application" acquire="False">
+      <role name="Contributor"/>
+      <role name="Manager"/>
+      <role name="Site Administrator"/>
+    </permission>
+    <permission name="c_step_intake: Add CSTEP Application" acquire="False">
+      <role name="Contributor"/>
+      <role name="Manager"/>
+      <role name="Site Administrator"/>
+    </permission>
+
+    <!-- Both review permissions are also managed per workflow state; these
+         are the site-wide floor. -->
+    <permission name="c_step_intake: Review Application" acquire="False">
+      <role name="Manager"/>
+      <role name="ProgramDirector"/>
+      <role name="ProgramStaff"/>
+      <role name="Site Administrator"/>
+    </permission>
+    <permission name="c_step_intake: Decide Application" acquire="False">
+      <role name="Manager"/>
+      <role name="ProgramDirector"/>
+      <role name="Site Administrator"/>
+    </permission>
+    <permission name="c_step_intake: View Applicant PII" acquire="False">
+      <role name="Manager"/>
+      <role name="ProgramDirector"/>
+      <role name="ProgramStaff"/>
+      <role name="Site Administrator"/>
+    </permission>
+
+  </permissions>
+</rolemap>

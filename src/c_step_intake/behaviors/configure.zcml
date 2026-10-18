@@ -1,0 +1,31 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:plone="http://namespaces.plone.org/plone"
+  i18n_domain="c_step_intake">
+
+  <include package="plone.behavior" file="meta.zcml"/>
+
+  <plone:behavior
+    name="c_step_intake.applicant_identity"
+    title="Applicant identity"
+    description="Name, date of birth, contact details and address."
+    provides=".applicant_identity.IApplicantIdentity"
+  />
+
+  <plone:behavior
+    name="c_step_intake.economic_eligibility"
+    title="Economic eligibility"
+    description="Household size, income and disadvantage indicators."
+    provides=".economic_eligibility.IEconomicEligibility"
+  />
+
+  <plone:behavior
+    name="c_step_intake.eligibility_record"
+    title="Eligibility record"
+    description="Append-only audit trail of eligibility decisions."
+    provides="c_step_intake.interfaces.IEligibilityRecord"
+    factory=".eligibility_record.EligibilityRecord"
+    marker="c_step_intake.interfaces.IEligibilityRecordMarker"
+  />
+
+</configure>

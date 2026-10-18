@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<object xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+        name="step_application"
+        meta_type="Dexterity FTI"
+        i18n:domain="c_step_intake">
+
+  <property name="title" i18n:translate="">STEP Application</property>
+  <property name="description" i18n:translate="">Science and Technology Entry Program application, for students in grades 7-12.</property>
+
+  <property name="icon_expr">string:file-earmark-text</property>
+  <property name="factory">step_application</property>
+  <property name="add_view_expr">string:${folder_url}/++add++step_application</property>
+  <property name="link_target"></property>
+  <property name="allow_discussion">False</property>
+
+  <!-- Applications may only be created inside the intake folder. -->
+  <property name="global_allow">False</property>
+  <property name="filter_content_types">True</property>
+  <property name="allowed_content_types"/>
+
+  <property name="add_permission">c_step_intake.AddStepApplication</property>
+  <property name="klass">c_step_intake.content.step_application.StepApplication</property>
+  <property name="schema">c_step_intake.content.step_application.IStepApplication</property>
+  <property name="model_file"></property>
+  <property name="model_source"></property>
+
+  <!-- plone.namefromtitle is deliberately absent: the title is computed from
+       the applicant's name, and deriving the object id from it would put
+       applicant names into URLs, logs and referrer headers. The computed
+       title still shows the name in staff listings. -->
+  <property name="behaviors" purge="False">
+    <element value="plone.locking"/>
+    <element value="c_step_intake.applicant_identity"/>
+    <element value="c_step_intake.economic_eligibility"/>
+    <element value="c_step_intake.eligibility_record"/>
+  </property>
+
+  <property name="default_view">view</property>
+  <property name="default_view_fallback">False</property>
+  <property name="immediate_view">view</property>
+  <property name="view_methods">
+    <element value="view"/>
+  </property>
+
+  <alias from="(Default)" to="(dynamic view)"/>
+  <alias from="edit" to="@@edit"/>
+  <alias from="sharing" to="@@sharing"/>
+  <alias from="view" to="(selected layout)"/>
+
+  <action action_id="view" category="object" condition_expr=""
+          i18n:attributes="title" i18n:domain="plone" title="View"
+          icon_expr="string:toolbar-action/view"
+          url_expr="string:${object_url}" visible="True">
+    <permission value="View"/>
+  </action>
+  <action action_id="edit" category="object" condition_expr=""
+          i18n:attributes="title" i18n:domain="plone" title="Edit"
+          icon_expr="string:toolbar-action/edit"
+          url_expr="string:${object_url}/edit" visible="True">
+    <permission value="Modify portal content"/>
+  </action>
+
+</object>

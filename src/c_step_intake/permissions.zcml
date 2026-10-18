@@ -1,0 +1,35 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:zcml="http://namespaces.zope.org/zcml"
+  i18n_domain="c_step_intake">
+
+  <configure zcml:condition="installed AccessControl.security">
+
+    <permission
+      id="c_step_intake.AddStepApplication"
+      title="c_step_intake: Add STEP Application"
+    />
+
+    <permission
+      id="c_step_intake.AddCstepApplication"
+      title="c_step_intake: Add CSTEP Application"
+    />
+
+    <permission
+      id="c_step_intake.ReviewApplication"
+      title="c_step_intake: Review Application"
+    />
+
+    <permission
+      id="c_step_intake.DecideApplication"
+      title="c_step_intake: Decide Application"
+    />
+
+    <permission
+      id="c_step_intake.ViewApplicantPII"
+      title="c_step_intake: View Applicant PII"
+    />
+
+  </configure>
+
+</configure>

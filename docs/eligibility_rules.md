@@ -1,7 +1,7 @@
 # Eligibility rules
 
 **Status:** not yet defined. Nothing is auto-accepted or auto-rejected.
-**Implementation:** [`src/yc/stepcstep/eligibility/rules.py`](../src/yc/stepcstep/eligibility/rules.py)
+**Implementation:** [`src/c_step_intake/eligibility/rules.py`](../src/c_step_intake/eligibility/rules.py)
 **Current version:** `0.1.0-completeness-only`
 
 ## What is implemented today

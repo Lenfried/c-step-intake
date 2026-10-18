@@ -1,6 +1,6 @@
-============
-yc.stepcstep
-============
+=============
+c-step-intake
+=============
 
 Plone 6 add-on providing the application intake for York College's STEP and
 CSTEP programs.
@@ -44,7 +44,7 @@ a straight copy rather than a column-by-column translation. There is no
 ``program`` discriminator column -- the program is implied by the table, which
 is why ``field_map.table_for(program)`` has to travel alongside the row.
 
-Our team owns the field mapping (``src/yc/stepcstep/db/field_map.py`` and
+Our team owns the field mapping (``src/c_step_intake/db/field_map.py`` and
 ``docs/field_mapping.md``). IT owns the write into PostgreSQL.
 
 
@@ -81,12 +81,12 @@ version that Plone 6.0 pins has no build, and the install fails outright.
     zope-testrunner --all --test-path=src
 
     # just the Plone-free tests: rules, field map, schema coverage
-    python -m unittest yc.stepcstep.tests.test_eligibility_rules yc.stepcstep.tests.test_field_map yc.stepcstep.tests.test_schema_coverage
+    python -m unittest c_step_intake.tests.test_eligibility_rules c_step_intake.tests.test_field_map c_step_intake.tests.test_schema_coverage
 
     flake8 src
 
 The integration tests build a real Plone site in an in-memory ZODB, apply the
-``yc.stepcstep:default`` profile and exercise the actual workflow, permissions
+``c_step_intake:default`` profile and exercise the actual workflow, permissions
 and event handler. Fixture setup costs a few seconds; the tests themselves run
 in well under a second.
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Installer for the yc.stepcstep package."""
+"""Installer for the c-step-intake package."""
 from setuptools import find_packages
 from setuptools import setup
 
@@ -10,7 +10,7 @@ long_description = '\n\n'.join([
 
 
 setup(
-    name='yc.stepcstep',
+    name='c-step-intake',
     version='1.0.0a1',
     description='STEP and CSTEP student application intake for York College',
     long_description=long_description,
@@ -27,14 +27,13 @@ setup(
     ],
     keywords='Python Plone CMS STEP CSTEP',
     author='York College CUNY',
-    url='https://github.com/rnunez80/yc.stepcstep',
+    url='https://github.com/Lenfried/c-step-intake',
     project_urls={
-        'Source': 'https://github.com/rnunez80/yc.stepcstep',
-        'Tracker': 'https://github.com/rnunez80/yc.stepcstep/issues',
+        'Source': 'https://github.com/Lenfried/c-step-intake',
+        'Tracker': 'https://github.com/Lenfried/c-step-intake/issues',
     },
     license='GPL version 2',
     packages=find_packages('src', exclude=['ez_setup']),
-    namespace_packages=['yc'],
     package_dir={'': 'src'},
     include_package_data=True,
     zip_safe=False,

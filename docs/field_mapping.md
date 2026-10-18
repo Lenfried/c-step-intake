@@ -2,7 +2,7 @@
 
 **Status:** reconciled against the live STEP schema (STEP), draft (CSTEP)
 **Owners:** STEP/CSTEP dev team (mapping) · IT (the write itself)
-**Source of truth:** [`src/yc/stepcstep/db/field_map.py`](../src/yc/stepcstep/db/field_map.py)
+**Source of truth:** [`src/c_step_intake/db/field_map.py`](../src/c_step_intake/db/field_map.py)
 
 This document is the human-readable view of `field_map.py`. If the two ever
 disagree, the code wins — but they shouldn't, because
@@ -122,7 +122,7 @@ stores short stable codes (`public_assistance`, `foster_care`,
 `computer_science_bs`, `junior`, …) with the prose as the display label. Option
 wording can then be reworded for applicants without invalidating stored rows
 or breaking report queries. Full code lists are in
-[`vocabularies.py`](../src/yc/stepcstep/vocabularies.py).
+[`vocabularies.py`](../src/c_step_intake/vocabularies.py).
 
 ---
 
@@ -270,7 +270,7 @@ Two notes for the database side:
 
 Note that only `student_id`, `first_name` and `last_name` are `NOT NULL`, so
 the database enforces no completeness at all. `REQUIRED_AT_SUBMIT` in
-[`rules.py`](../src/yc/stepcstep/eligibility/rules.py) is the only real gate.
+[`rules.py`](../src/c_step_intake/eligibility/rules.py) is the only real gate.
 
 ---
 
