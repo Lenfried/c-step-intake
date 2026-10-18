@@ -57,9 +57,11 @@ they are, ``eligibility/rules.py`` implements only the completeness check and
 routes every complete application to ``manual_review``. Nothing is
 auto-rejected. See ``docs/eligibility_rules.md`` for the open questions.
 
-The STEP mapping is reconciled against the live STEP schema: 32 of its 33
-columns are mapped, six more need adding and three need a type decision.
-``docs/field_mapping.md`` section 7 is that list, written for IT.
+The STEP mapping is reconciled against the live STEP schema: 33 of its 34
+columns are mapped (``exit_date`` is never written). IT must change
+``zip_code`` from integer to text before go-live; four columns that would
+carry audit detail are deferred, because every application goes to manual
+review for now. ``docs/field_mapping.md`` section 7 has the list, written for IT.
 
 CSTEP exists on the Plone side but has no tables yet, because CSTEP database
 development is not yet authorised. Its entries in ``field_map.py`` are

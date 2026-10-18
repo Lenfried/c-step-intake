@@ -55,9 +55,8 @@ class TestFieldMap(unittest.TestCase):
             self.assertIn(column, step)
             self.assertIn(column, cstep)
 
-    def test_decision_columns_apply_to_both_programs(self):
-        for column in ('program_status', 'decision_reason', 'decided_at',
-                       'rules_version'):
+    def test_status_columns_apply_to_both_programs(self):
+        for column in ('program_status', 'accepted_date'):
             mapping = self._by_column(column)
             self.assertEqual(field_map.BOTH, mapping.programs)
 
