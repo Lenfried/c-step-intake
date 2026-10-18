@@ -6,8 +6,5 @@
     <type type_id="step_application">
       <bound-workflow workflow_id="step-cstep-application"/>
     </type>
-    <type type_id="cstep_application">
-      <bound-workflow workflow_id="step-cstep-application"/>
-    </type>
   </bindings>
 </object>

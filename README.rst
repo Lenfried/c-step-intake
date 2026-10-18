@@ -3,7 +3,8 @@ c-step-intake
 =============
 
 Plone 6 add-on providing the application intake for York College's STEP and
-CSTEP programs.
+CSTEP programs. **Production ships STEP only**: CSTEP is off by default and
+is turned on by applying a separate profile (see `Enabling CSTEP`_).
 
 - ``step_application`` -- Science and Technology Entry Program, grades 7-12.
 - ``cstep_application`` -- Collegiate Science and Technology Entry Program,
@@ -65,6 +66,49 @@ development is not yet authorised. Its entries in ``field_map.py`` are
 provisional and have not been checked against anything live.
 
 
+Enabling CSTEP
+==============
+
+Installing ``c_step_intake:default`` gives a site ``step_application`` only.
+The ``cstep_application`` type, its workflow binding and its add permission
+live in the ``c_step_intake:cstep`` profile, which is not applied by default.
+The CSTEP code (schema, behaviors, field map entries, rules) stays in the
+package so it keeps being tested, but a site cannot create a CSTEP
+application until the profile is applied.
+
+Do these **before** applying the profile in production:
+
+1. **Get CSTEP database development authorised and the tables built.** There
+   are no CSTEP tables today. Each program writes to its own applications
+   table, shaped like that program's students table.
+2. **Reconcile ``field_map.py`` against the live CSTEP schema.** Every CSTEP
+   entry is provisional and unchecked. Update ``docs/field_mapping.md`` to
+   match, and tell IT which columns need adding or retyping (as section 7 does
+   for STEP).
+3. **Have IT extend the PostgreSQL write to the CSTEP table.** The write must
+   use ``field_map.table_for('cstep')``.
+4. **Define the CSTEP eligibility criteria.** ``eligibility/rules.py``
+   currently only checks completeness and sends every complete application
+   to ``manual_review``. Record the CSTEP-specific questions and answers in
+   ``docs/eligibility_rules.md``.
+5. **Re-run the full suite** (``zope-testrunner --all --test-path=src``). The
+   test layer applies both profiles, so CSTEP coverage is already included.
+6. **Check the role map.** ``profiles/default/rolemap.xml`` already grants
+   ``c_step_intake: Add CSTEP Application``. Confirm the roles are right for
+   the CSTEP audience (enrolled college students rather than grades 7-12).
+
+Then enable it on a site, either with ``portal_setup`` (Import tab, profile
+"c_step_intake: CSTEP applications") or from a script::
+
+    portal.portal_setup.runAllImportStepsFromProfile(
+        'profile-c_step_intake:cstep')
+
+The profile depends on ``c_step_intake:default``. There is no uninstall
+profile for CSTEP: remove the type in ``portal_types`` only after deleting any
+CSTEP applications. Once CSTEP is ready for everyone, move the three files
+from ``profiles/cstep`` back into ``profiles/default`` and drop the profile.
+
+
 Development
 ===========
 
@@ -77,7 +121,7 @@ version that Plone 6.0 pins has no build, and the install fails outright.
     py -3.11 -m venv .venv
     .venv\Scripts\pip install -e ".[test]" -c constraints.txt
 
-    # full suite -- 51 tests, including the in-memory Plone site fixture
+    # full suite -- 54 tests, including the in-memory Plone site fixture
     zope-testrunner --all --test-path=src
 
     # just the Plone-free tests: rules, field map, schema coverage

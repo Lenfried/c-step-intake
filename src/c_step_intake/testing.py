@@ -17,6 +17,8 @@ class CStepIntakeLayer(PloneSandboxLayer):
 
     def setUpPloneSite(self, portal):
         applyProfile(portal, 'c_step_intake:default')
+        # Tests exercise both programs; production enables CSTEP separately.
+        applyProfile(portal, 'c_step_intake:cstep')
 
 
 C_STEP_INTAKE_FIXTURE = CStepIntakeLayer()
@@ -29,4 +31,24 @@ C_STEP_INTAKE_INTEGRATION_TESTING = IntegrationTesting(
 C_STEP_INTAKE_FUNCTIONAL_TESTING = FunctionalTesting(
     bases=(C_STEP_INTAKE_FIXTURE,),
     name='CStepIntakeLayer:FunctionalTesting',
+)
+
+
+class StepOnlyLayer(PloneSandboxLayer):
+    """What production gets: the default profile alone, no CSTEP."""
+
+    defaultBases = (PLONE_APP_CONTENTTYPES_FIXTURE,)
+
+    def setUpZope(self, app, configurationContext):
+        self.loadZCML(package=c_step_intake)
+
+    def setUpPloneSite(self, portal):
+        applyProfile(portal, 'c_step_intake:default')
+
+
+STEP_ONLY_FIXTURE = StepOnlyLayer()
+
+STEP_ONLY_INTEGRATION_TESTING = IntegrationTesting(
+    bases=(STEP_ONLY_FIXTURE,),
+    name='StepOnlyLayer:IntegrationTesting',
 )
