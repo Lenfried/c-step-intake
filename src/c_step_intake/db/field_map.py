@@ -66,8 +66,9 @@ class Mapping:
 APPLICATIONS = (
     # --- keys and provenance -------------------------------------------
     Mapping('student_id', 'uuid', BOTH,
-            note='Plone UID; opaque by design. Named student_id to match the '
-                 'students table so the id survives promotion on accept.'),
+            note='Plone UID, written in the dashed form the table already '
+                 'uses (04e42317-bea7-44c6-964b-aa6944518988). Opaque by '
+                 'design; stable for the life of the application.'),
     Mapping('application_date', 'date', BOTH,
             note='Object creation date. See field_mapping.md Q8: arguably '
                  'should be the first-submit date instead.'),
