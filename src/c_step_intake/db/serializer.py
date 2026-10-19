@@ -12,6 +12,8 @@ disagree about what an applicant answered.
 Each program has its own table (step_student / cstep_student), so a row is only meaningful
 alongside the table it belongs to -- see ``field_map.table_for``.
 """
+import uuid
+
 from plone import api
 from plone.dexterity.utils import iterSchemata
 from plone.uuid.interfaces import IUUID
@@ -37,6 +39,25 @@ def _major_at_application(obj):
     if major == 'other':
         return getattr(obj, 'major_other', None)
     return major
+
+
+def format_student_id(plone_uid):
+    """Return a Plone UID in the dashed form the table already uses.
+
+    Plone stores a UID as 32 hex characters; step_student holds
+    ``04e42317-bea7-44c6-964b-aa6944518988``. Same value, same randomness,
+    only the dashes differ, and the result is stable for a given object.
+    """
+    if not plone_uid:
+        return None
+    try:
+        return str(uuid.UUID(plone_uid))
+    except ValueError:
+        return plone_uid
+
+
+def _student_id(obj):
+    return format_student_id(IUUID(obj, None))
 
 
 def _application_date(obj):
@@ -69,7 +90,7 @@ def _accepted_date(obj):
 
 #: Column name -> how to compute it from the object.
 DERIVED = {
-    'student_id': IUUID,
+    'student_id': _student_id,
     'application_date': _application_date,
     'created_date': _created_date,
     'last_update': _last_update,
