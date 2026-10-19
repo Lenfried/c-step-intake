@@ -1,0 +1,38 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  i18n_domain="c_step_intake">
+
+  <!-- Add views are looked up by FTI name, so each type gets its own
+       registration, guarded by that type's add permission. -->
+  <adapter
+    for="Products.CMFCore.interfaces.IFolderish
+         zope.publisher.interfaces.browser.IDefaultBrowserLayer
+         plone.dexterity.interfaces.IDexterityFTI"
+    provides="zope.publisher.interfaces.browser.IBrowserPage"
+    factory=".forms.AddView"
+    name="step_application"
+  />
+  <adapter
+    for="Products.CMFCore.interfaces.IFolderish
+         zope.publisher.interfaces.browser.IDefaultBrowserLayer
+         plone.dexterity.interfaces.IDexterityFTI"
+    provides="zope.publisher.interfaces.browser.IBrowserPage"
+    factory=".forms.AddView"
+    name="cstep_application"
+  />
+  <class class=".forms.AddView">
+    <require
+      permission="cmf.AddPortalContent"
+      interface="zope.publisher.interfaces.browser.IBrowserPage"
+    />
+  </class>
+
+  <browser:page
+    for="c_step_intake.interfaces.IApplication"
+    name="edit"
+    class=".forms.EditForm"
+    permission="cmf.ModifyPortalContent"
+  />
+
+</configure>
