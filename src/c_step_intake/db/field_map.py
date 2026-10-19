@@ -9,8 +9,13 @@ supplied by ``serializer.DERIVED``.
 Each program writes to its **own** table (see :data:`TABLES`), so there is no
 ``program`` discriminator column: the program is implied by which table the
 row goes to, which is why the hand-off needs ``table_for(program)`` alongside
-the row itself. ``program_status`` records where the application is in the
-workflow.
+the row itself.
+
+A row is written only when an application is **accepted**. Undecided and
+rejected applications stay in Plone and never reach the table. Once a row
+exists the database owns it: ``program_status`` (enrolment status) is set by
+the insert or a column default and changed only on the database side, so the
+hand-off must insert and never update.
 
 The STEP mappings below are reconciled against the live STEP students table.
 The CSTEP ones are provisional -- that table does not exist yet.
@@ -147,13 +152,10 @@ APPLICATIONS = (
     Mapping('email_consent', 'boolean', (CSTEP,), field='email_consent',
             note='Governs whether the program may email them.'),
 
-    # --- decision and audit --------------------------------------------
-    Mapping('program_status', 'text', BOTH,
-            note='The Plone workflow state. CONFIRM: on the students table '
-                 'this column appears to mean enrolment status instead, in '
-                 'which case the two meanings must not share a column.'),
+    # --- decision -------------------------------------------------------
     Mapping('accepted_date', 'date', BOTH,
-            note='Date of the accept transition; null until accepted.'),
+            note='Date of the accept transition. Always set, because a row '
+                 'is only written on acceptance.'),
 )
 
 #: Fields deliberately not written to PostgreSQL. Listing one here is a
@@ -166,6 +168,10 @@ UNMAPPED = {
 #: Columns on the live table that this add-on never populates. They belong to
 #: enrolment, which happens after acceptance and outside this add-on.
 NOT_POPULATED = {
+    'program_status': 'Enrolment status. Set by the insert (or a column '
+                      'default) when the row is created on acceptance, then '
+                      'owned by the database side. Plone never writes it and '
+                      'never updates an existing row.',
     'exit_date': 'Set when a student leaves the program; no application '
                  'analogue.',
 }

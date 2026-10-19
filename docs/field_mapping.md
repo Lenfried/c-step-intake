@@ -19,8 +19,9 @@ connection.
 
 ```
 applicant → Plone form → submit → eligibility rules → workflow state
-                                        │
-                                        └→ db.serializer.to_row(obj)
+                                                          │ staff accept
+                                                          ▼
+                                        db.serializer.to_row(obj)
                                               │
                                               └→ { column: value, ... }  → IT
                                                  into field_map.table_for(program)
@@ -56,9 +57,15 @@ retried rather than dropped. This choice does not affect any column below.
 - **No `program` discriminator column.** The program is implied by which
   table the row lands in. `to_row()` therefore emits no `program` key, and
   `field_map.table_for(program)` is how the destination travels with the row.
-- **Applications land in the student table.** `program_status` carries the
-  application's workflow state, so a row exists from submission, whether or
-  not the applicant is later accepted.
+- **A row is written only on acceptance.** Undecided and rejected
+  applications stay in Plone and never reach the table, so `step_student`
+  holds accepted students only. The hand-off fires on the `accept`
+  transition, not on submit.
+- **The database owns the row afterwards.** The hand-off must **insert, never
+  update** (`INSERT ... ON CONFLICT (student_id) DO NOTHING`), so a retried or
+  duplicated hand-off can't overwrite a student's current `program_status`.
+  If a director reopens an accepted application in Plone, the database row is
+  not touched.
 - **Audit detail stays in Plone.** The live table has no columns for the
   decision reason, time or rules version, so those are not written. They live
   in the application's Plone annotations (the full decision history).
@@ -67,10 +74,6 @@ CSTEP having its own table is what unblocks STEP shipping before CSTEP
 development is authorised. The cost is that cross-program reporting — which
 the NYSED interim report needs — becomes a `UNION` across two tables rather
 than one query with a `WHERE program = …`.
-
-**Open for IT:** because applicants are now in the student table from
-submission, anything that treats every `step_student` row as an enrolled
-student (rosters, reports) must filter on `program_status`.
 
 ---
 
@@ -187,19 +190,17 @@ are not yet decided — see Q7.
 
 ---
 
-## 6. Decision and audit columns
+## 6. Decision columns
 
 | Source | Column | Type |
 |---|---|---|
-| Plone workflow state | `program_status` | `text` |
 | date of the `accept` transition | `accepted_date` | `date` |
 
-`program_status` takes one of: `draft`, `submitted`, `request_more_info`,
-`resubmitted`, `manual_review`, `accepted`, `rejected`. **Confirm with IT** —
-on the students table this column looks like it means *enrolment* status
-(`exit_date` sits beside it). If so, application status and enrolment status
-must not share a column name across the two tables, or a report joining them
-will silently compare different vocabularies. See Q10.
+`program_status` is **not written by this add-on.** It tracks a student's
+enrolment (`exit_date` sits beside it), and it is null until acceptance. The
+insert that creates the row on acceptance sets its starting value, or a column
+`DEFAULT` does, and after that only the database side changes it. IT should
+say what the starting value is.
 
 `accepted_date` is read from workflow history rather than recorded separately:
 the transition is the event, and duplicating it into an annotation would give
@@ -210,15 +211,18 @@ database (the live table has no columns for them). Full decision history,
 including `rules_version`, stays in Plone annotations, so a past outcome can
 still be explained to an auditor from there.
 
-`exit_date` exists on the table but this add-on never writes it — it belongs
-to enrolment, after acceptance. It's listed in `field_map.NOT_POPULATED`.
+`exit_date` and `program_status` exist on the table but this add-on never
+writes them — they belong to enrolment, after acceptance. Both are listed in
+`field_map.NOT_POPULATED`.
 
 ---
 
 ## 7. Columns IT needs to add or change
 
 `zip_code` must become `text` before go-live; nothing else is required. All 34 columns of `step_student` are
-mapped except `exit_date`, which belongs to enrolment and is never written.
+mapped except `exit_date` and `program_status`, which belong to enrolment and
+are never written by this add-on. IT should say what `program_status` starts as
+for a new row, or give the column a `DEFAULT`.
 
 ### Deferred
 
@@ -307,7 +311,7 @@ and race as multi-select. The current single combined field cannot produce
 those two report fields, and changing it later is a data migration. Cheap to
 fix now; expensive after the first cohort.
 
-**Q6 — Retention.** How long are rejected applications kept, and is there a
+**Q6 — Retention.** Rejected and undecided applications live only in Plone. How long are they kept, and is there a
 purge requirement? This affects whether the mapping needs a
 `retention_expires_at` column.
 
@@ -332,13 +336,9 @@ should be `timestamptz`.
 transfer student, a non-US label) would need the column changed to `text`
 first.
 
-**Q10 — Does `program_status` mean application status or enrolment status?**
-On the students table, sitting next to `exit_date`, it reads as enrolment
-status (`active`/`exited`/`graduated`). We write the Plone workflow
-state (`draft`…`accepted`/`rejected`) into the same column, in the same table.
-Two vocabularies in one column — **this needs IT's answer before launch**:
-either `program_status` is defined to cover both, or applications get their
-own column.
+**Q10 — Resolved.** `program_status` is enrolment status, owned by the
+database side. Rows are inserted only on acceptance, so the column never holds
+an application state. Still open: what value a new row starts with.
 
 ---
 

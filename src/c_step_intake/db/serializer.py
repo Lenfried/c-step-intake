@@ -74,7 +74,6 @@ DERIVED = {
     'created_date': _created_date,
     'last_update': _last_update,
     'major_at_application': _major_at_application,
-    'program_status': lambda obj: api.content.get_state(obj=obj, default=None),
     'accepted_date': _accepted_date,
 }
 

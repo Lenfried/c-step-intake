@@ -39,11 +39,13 @@ How it fits together
 The same payload feeds the eligibility rules and the PostgreSQL row, so the
 rules and the database can never disagree about what an applicant answered.
 
-Each program writes to its **own** applications table, shaped identically to
-that program's students table so an accepted application can be promoted with
-a straight copy rather than a column-by-column translation. There is no
-``program`` discriminator column -- the program is implied by the table, which
-is why ``field_map.table_for(program)`` has to travel alongside the row.
+Each program writes to its **own** table (``step_student``, and tentatively
+``cstep_student``). A row is written only when an application is **accepted**;
+undecided and rejected applications stay in Plone. After that the database owns
+the row, including ``program_status`` (enrolment status), so the hand-off must
+insert and never update. There is no ``program`` discriminator column -- the
+program is implied by the table, which is why ``field_map.table_for(program)``
+has to travel alongside the row.
 
 Our team owns the field mapping (``src/c_step_intake/db/field_map.py`` and
 ``docs/field_mapping.md``). IT owns the write into PostgreSQL.
