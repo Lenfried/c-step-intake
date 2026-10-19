@@ -6,12 +6,16 @@ IT owns the write itself. It deliberately imports nothing from Plone so it can
 be read, diffed and unit-tested as plain data -- values for derived columns are
 supplied by ``serializer.DERIVED``.
 
-Each program writes to its **own** applications table (see :data:`TABLES`),
-shaped identically to that program's students table, so an accepted
-application can be promoted into ``students`` as a straight copy rather than a
-column-by-column translation. There is therefore no ``program`` discriminator
-column: the program is implied by which table the row goes to, which is why
-the hand-off needs ``table_for(program)`` alongside the row itself.
+Each program writes to its **own** table (see :data:`TABLES`), so there is no
+``program`` discriminator column: the program is implied by which table the
+row goes to, which is why the hand-off needs ``table_for(program)`` alongside
+the row itself.
+
+A row is written only when an application is **accepted**. Undecided and
+rejected applications stay in Plone and never reach the table. Once a row
+exists the database owns it: ``program_status`` (enrolment status) is set by
+the insert or a column default and changed only on the database side, so the
+hand-off must insert and never update.
 
 The STEP mappings below are reconciled against the live STEP students table.
 The CSTEP ones are provisional -- that table does not exist yet.
@@ -29,11 +33,11 @@ STEP = 'step'
 CSTEP = 'cstep'
 BOTH = (STEP, CSTEP)
 
-#: Applications table per program. Each mirrors that program's students table.
-#: CONFIRM both names with IT -- they are not in the schema dump we were given.
+#: Table per program.
+#: The STEP name is confirmed; the CSTEP one is tentative.
 TABLES = {
-    STEP: 'step_applications',
-    CSTEP: 'cstep_applications',
+    STEP: 'step_student',
+    CSTEP: 'cstep_student',  # tentative: the CSTEP table does not exist yet
 }
 
 
@@ -56,13 +60,15 @@ class Mapping:
     note: str = ''
 
 
-#: Target tables: one applications table per program, see TABLES.
-#: `NEW COLUMN` marks a column absent from the live STEP students table.
+#: Target columns, reconciled against the live step_student table. Audit
+#: detail (decision reason, time, rules version) is not written to the
+#: database; it stays in Plone annotations.
 APPLICATIONS = (
     # --- keys and provenance -------------------------------------------
     Mapping('student_id', 'uuid', BOTH,
-            note='Plone UID; opaque by design. Named student_id to match the '
-                 'students table so the id survives promotion on accept.'),
+            note='Plone UID, written in the dashed form the table already '
+                 'uses (04e42317-bea7-44c6-964b-aa6944518988). Opaque by '
+                 'design; stable for the life of the application.'),
     Mapping('application_date', 'date', BOTH,
             note='Object creation date. See field_mapping.md Q8: arguably '
                  'should be the first-submit date instead.'),
@@ -81,22 +87,14 @@ APPLICATIONS = (
     Mapping('student_email', 'text', BOTH, field='student_email', pii=True),
     Mapping('student_phone_number', 'text', BOTH,
             field='student_phone_number', pii=True,
-            note='NEW COLUMN. The live table has no student phone column at '
-                 'all, though the form requires one of every applicant.'),
+            note='Present on the live table. Required of every applicant.'),
     Mapping('street_address', 'text', BOTH, field='street_address', pii=True),
-    Mapping('apartment_number', 'text', BOTH, field='apartment_number',
-            pii=True,
-            note='NEW COLUMN. Without it the mailing address is incomplete '
-                 'for any applicant in an apartment building.'),
     Mapping('city', 'text', BOTH, field='city'),
-    Mapping('state', 'character(2)', BOTH, field='state',
-            note='CONFIRM length. information_schema reports "character" for '
-                 'any char(n), and bare character defaults to char(1), which '
-                 'cannot hold "NY".'),
+    Mapping('state', 'text', BOTH, field='state'),
     Mapping('zip_code', 'text', BOTH, field='zip_code',
-            note='LIVE COLUMN IS integer -- must change to text. ZIP+4 and '
-                 'leading zeros (NY 06390) are unstorable as an integer, and '
-                 'a ZIP is an identifier, never an arithmetic operand.'),
+            note='LIVE COLUMN IS integer -- IT must change it to text before '
+                 'go-live. ZIP+4 and leading zeros (NY 06390) are '
+                 'unstorable as an integer.'),
     Mapping('nys_resident', 'boolean', BOTH, field='nys_resident'),
 
     # --- household ------------------------------------------------------
@@ -114,15 +112,12 @@ APPLICATIONS = (
     Mapping('free_reduced_lunch', 'boolean', (STEP,),
             field='free_reduced_lunch'),
     Mapping('school_name', 'text', (STEP,), field='school_name'),
-    Mapping('current_grade', 'text', (STEP,), field='current_grade',
-            note='LIVE COLUMN IS integer. Text here so it can absorb '
-                 'non-numeric values later (e.g. ungraded) without a '
-                 'migration. See field_mapping.md Q9.'),
+    Mapping('current_grade', 'integer', (STEP,), field='current_grade',
+            note='Live column is integer; the form only offers 7-12, and '
+                 'the serializer writes it as an int. See field_mapping.md '
+                 'Q9.'),
     Mapping('cumulative_gpa', 'numeric', (STEP,), field='cumulative_gpa',
             note='0-100 or 4.0 scale; ambiguous until gpa_scale is asked.'),
-    Mapping('gpa_scale', 'text', (STEP,),
-            note='NEW COLUMN. 4.0 or 100; see field_mapping.md Q4. Null '
-                 'until the STEP form asks. CSTEP needs no such column.'),
     Mapping('parent1_first_name', 'text', (STEP,), field='parent1_first_name',
             pii=True),
     Mapping('parent1_last_name', 'text', (STEP,), field='parent1_last_name',
@@ -158,17 +153,10 @@ APPLICATIONS = (
     Mapping('email_consent', 'boolean', (CSTEP,), field='email_consent',
             note='Governs whether the program may email them.'),
 
-    # --- decision and audit --------------------------------------------
-    Mapping('program_status', 'text', BOTH,
-            note='The Plone workflow state. CONFIRM: on the students table '
-                 'this column appears to mean enrolment status instead, in '
-                 'which case the two meanings must not share a column.'),
+    # --- decision -------------------------------------------------------
     Mapping('accepted_date', 'date', BOTH,
-            note='Date of the accept transition; null until accepted.'),
-    Mapping('decision_reason', 'text', BOTH, note='NEW COLUMN.'),
-    Mapping('decided_at', 'timestamptz', BOTH, note='NEW COLUMN.'),
-    Mapping('rules_version', 'text', BOTH,
-            note='NEW COLUMN. Which rule set produced the decision.'),
+            note='Date of the accept transition. Always set, because a row '
+                 'is only written on acceptance.'),
 )
 
 #: Fields deliberately not written to PostgreSQL. Listing one here is a
@@ -181,13 +169,17 @@ UNMAPPED = {
 #: Columns on the live table that this add-on never populates. They belong to
 #: enrolment, which happens after acceptance and outside this add-on.
 NOT_POPULATED = {
+    'program_status': 'Enrolment status. Set by the insert (or a column '
+                      'default) when the row is created on acceptance, then '
+                      'owned by the database side. Plone never writes it and '
+                      'never updates an existing row.',
     'exit_date': 'Set when a student leaves the program; no application '
                  'analogue.',
 }
 
 
 def table_for(program):
-    """Return the applications table ``program`` writes to."""
+    """Return the table ``program`` writes to."""
     return TABLES[program]
 
 

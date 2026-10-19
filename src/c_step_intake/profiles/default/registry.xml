@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<registry>
+  <record name="c_step_intake.notification_email">
+    <field type="plone.registry.field.TextLine">
+      <title>New-application notification address</title>
+      <description>Receives an email each time an application is submitted. Leave empty to turn notifications off.</description>
+      <required>False</required>
+    </field>
+    <value>cstep-n8n@mailings.york.cuny.edu</value>
+  </record>
+</registry>

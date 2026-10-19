@@ -47,7 +47,6 @@ class IApplicantIdentity(model.Schema):
             'student_email',
             'student_phone_number',
             'street_address',
-            'apartment_number',
             'city',
             'state',
             'zip_code',
@@ -97,11 +96,6 @@ class IApplicantIdentity(model.Schema):
     street_address = schema.TextLine(
         title=_('Street address'),
         required=True,
-    )
-
-    apartment_number = schema.TextLine(
-        title=_('Apartment number'),
-        required=False,
     )
 
     city = schema.TextLine(
