@@ -6,6 +6,7 @@ from plone import api
 from c_step_intake.db.serializer import to_payload
 from c_step_intake.eligibility.rules import decide
 from c_step_intake.interfaces import IEligibilityRecord
+from c_step_intake.notifications import notify_new_application
 
 
 logger = logging.getLogger('c_step_intake')
@@ -37,6 +38,10 @@ def evaluate_application(obj, event):
     # flag their own application, so the follow-on transition is elevated.
     with api.env.adopt_roles(['Manager']):
         api.content.transition(obj=obj, transition=decision.transition)
+
+    # Only a first submission is news; a resubmission is not a new application.
+    if event.transition.id == 'submit':
+        notify_new_application(obj, decision)
 
     logger.info(
         'Application %s (%s): %s via %s [rules %s]',

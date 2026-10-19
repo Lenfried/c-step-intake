@@ -13,9 +13,19 @@
     name="default"
     title="c_step_intake"
     directory="profiles/default"
-    description="STEP and CSTEP student application intake."
+    description="STEP student application intake. CSTEP is off until the cstep profile is applied."
     provides="Products.GenericSetup.interfaces.EXTENSION"
     post_handler=".setuphandlers.post_install"
+  />
+
+  <!-- CSTEP toggle: applying this profile adds the cstep_application type and
+       binds it to the workflow. See "Enabling CSTEP" in the README. -->
+  <genericsetup:registerProfile
+    name="cstep"
+    title="c_step_intake: CSTEP applications"
+    directory="profiles/cstep"
+    description="Enables the CSTEP application type. Not ready for production."
+    provides="Products.GenericSetup.interfaces.EXTENSION"
   />
 
   <genericsetup:registerProfile

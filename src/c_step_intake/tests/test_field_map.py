@@ -55,11 +55,17 @@ class TestFieldMap(unittest.TestCase):
             self.assertIn(column, step)
             self.assertIn(column, cstep)
 
-    def test_decision_columns_apply_to_both_programs(self):
-        for column in ('program_status', 'decision_reason', 'decided_at',
-                       'rules_version'):
-            mapping = self._by_column(column)
-            self.assertEqual(field_map.BOTH, mapping.programs)
+    def test_accepted_date_applies_to_both_programs(self):
+        mapping = self._by_column('accepted_date')
+        self.assertEqual(field_map.BOTH, mapping.programs)
+
+    def test_program_status_is_never_written(self):
+        # Enrolment status belongs to the database side; see NOT_POPULATED.
+        self.assertIn('program_status', field_map.NOT_POPULATED)
+        for program in (field_map.STEP, field_map.CSTEP):
+            self.assertNotIn(
+                'program_status',
+                [m.column for m in field_map.columns_for(program)])
 
     def test_each_program_has_its_own_table(self):
         self.assertNotEqual(

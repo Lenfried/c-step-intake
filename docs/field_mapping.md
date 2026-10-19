@@ -1,6 +1,6 @@
 # Plone → PostgreSQL field mapping
 
-**Status:** reconciled against the live STEP schema (STEP), draft (CSTEP)
+**Status:** reconciled against the live `step_student` table (STEP), draft (CSTEP)
 **Owners:** STEP/CSTEP dev team (mapping) · IT (the write itself)
 **Source of truth:** [`src/c_step_intake/db/field_map.py`](../src/c_step_intake/db/field_map.py)
 
@@ -19,8 +19,9 @@ connection.
 
 ```
 applicant → Plone form → submit → eligibility rules → workflow state
-                                        │
-                                        └→ db.serializer.to_row(obj)
+                                                          │ staff accept
+                                                          ▼
+                                        db.serializer.to_row(obj)
                                               │
                                               └→ { column: value, ... }  → IT
                                                  into field_map.table_for(program)
@@ -31,7 +32,7 @@ values, keyed by Plone field name instead, are what the eligibility rules
 evaluate — one mapping, two consumers, so the decision and the stored record
 can never disagree.
 
-Because each program now has its own table (§2), a row is only meaningful
+Because each program has its own table (§2), a row is only meaningful
 alongside the table it belongs to. `field_map.table_for(program)` supplies
 that; the row itself carries no program column.
 
@@ -46,35 +47,33 @@ retried rather than dropped. This choice does not affect any column below.
 
 ## 2. Table structure
 
-**One applications table per program, each shaped identically to that
-program's students table.**
+**One table per program, written directly.**
 
-| Program | Applications table | Students table | Status |
-|---|---|---|---|
-| STEP | `step_applications` | (the schema we were sent) | reconciled |
-| CSTEP | `cstep_applications` | — | not started |
-
-Table names above need confirming — they weren't in the schema dump.
-
-Two consequences worth being explicit about:
+| Program | Table | Status |
+|---|---|---|
+| STEP | `step_student` | live, reconciled |
+| CSTEP | `cstep_student` | tentative name; table not started |
 
 - **No `program` discriminator column.** The program is implied by which
   table the row lands in. `to_row()` therefore emits no `program` key, and
   `field_map.table_for(program)` is how the destination travels with the row.
-- **Applications and students share a shape**, so promoting an accepted
-  application into `students` is a straight copy rather than a column-by-column
-  translation. `student_id` carries the Plone UID, so the identifier survives
-  that promotion.
+- **A row is written only on acceptance.** Undecided and rejected
+  applications stay in Plone and never reach the table, so `step_student`
+  holds accepted students only. The hand-off fires on the `accept`
+  transition, not on submit.
+- **The database owns the row afterwards.** The hand-off must **insert, never
+  update** (`INSERT ... ON CONFLICT (student_id) DO NOTHING`), so a retried or
+  duplicated hand-off can't overwrite a student's current `program_status`.
+  If a director reopens an accepted application in Plone, the database row is
+  not touched.
+- **Audit detail stays in Plone.** The live table has no columns for the
+  decision reason, time or rules version, so those are not written. They live
+  in the application's Plone annotations (the full decision history).
 
-An applicant is still not a student: `students` should be populated **only on
-the `accept` transition**, never at submit. The applications table is where
-every submission lands, accepted or not.
-
-CSTEP splitting into its own tables is what unblocks STEP shipping before
-CSTEP development is authorised. The cost is that cross-program reporting —
-which the NYSED interim report needs — becomes a `UNION` across two tables
-rather than one query with a `WHERE program = …`. Worth confirming that's
-acceptable to whoever writes that report.
+CSTEP having its own table is what unblocks STEP shipping before CSTEP
+development is authorised. The cost is that cross-program reporting — which
+the NYSED interim report needs — becomes a `UNION` across two tables rather
+than one query with a `WHERE program = …`.
 
 ---
 
@@ -94,9 +93,8 @@ acceptable to whoever writes that report.
 | `student_email` | `student_email` | `text` | ● |
 | `student_phone_number` | `student_phone_number` | `text` | ● |
 | `street_address` | `street_address` | `text` | ● |
-| `apartment_number` | `apartment_number` | `text` | ● |
 | `city` | `city` | `text` | |
-| `state` | `state` | `character(2)` | |
+| `state` | `state` | `text` | |
 | `zip_code` | `zip_code` | `text` | |
 | `nys_resident` | `nys_resident` | `boolean` | |
 | `household_size` | `household_size` | `integer` | |
@@ -131,9 +129,8 @@ or breaking report queries. Full code lists are in
 | Plone field | Column | Type | PII |
 |---|---|---|---|
 | `school_name` | `school_name` | `text` | |
-| `current_grade` | `current_grade` | `text` | |
+| `current_grade` | `current_grade` | `integer` | |
 | `cumulative_gpa` | `cumulative_gpa` | `numeric` | |
-| *(derived)* | `gpa_scale` | `text` | |
 | `free_reduced_lunch` | `free_reduced_lunch` | `boolean` | |
 | `parent1_first_name` | `parent1_first_name` | `text` | ● |
 | `parent1_last_name` | `parent1_last_name` | `text` | ● |
@@ -152,9 +149,8 @@ noting for retention and access-control decisions on these columns.
 is no longer any need for a shared `application_gpa` column aliasing STEP's
 `cumulative_gpa` and CSTEP's `gpa` onto one name.
 
-`current_grade` is stored as text (`'7'`…`'12'`) rather than an integer so it
-can absorb non-numeric values later (e.g. `'ungraded'`) without a migration.
-The live column is `integer` — see Q9.
+`current_grade` is written as an integer (7–12) to match the live column. See
+Q9.
 
 ---
 
@@ -162,8 +158,8 @@ The live column is `integer` — see Q9.
 
 **Provisional.** The CSTEP tables do not exist yet — development on the CSTEP
 side is not authorised — so none of these have been reconciled against a live
-column. Expect the same treatment STEP got: the applications table mirrors a
-CSTEP students table, and these column names may change to match whatever
+column. Expect the same treatment STEP got: the CSTEP table will mirror
+the STEP one, and these column names may change to match whatever
 that table turns out to look like.
 
 | Plone field | Column | Type | PII |
@@ -194,61 +190,65 @@ are not yet decided — see Q7.
 
 ---
 
-## 6. Decision and audit columns
+## 6. Decision columns
 
 | Source | Column | Type |
 |---|---|---|
-| Plone workflow state | `program_status` | `text` |
 | date of the `accept` transition | `accepted_date` | `date` |
-| decision reason | `decision_reason` | `text` |
-| decision timestamp | `decided_at` | `timestamptz` |
-| rule set version | `rules_version` | `text` |
 
-`program_status` takes one of: `draft`, `submitted`, `request_more_info`,
-`resubmitted`, `manual_review`, `accepted`, `rejected`. **Confirm with IT** —
-on the students table this column looks like it means *enrolment* status
-(`exit_date` sits beside it). If so, application status and enrolment status
-must not share a column name across the two tables, or a report joining them
-will silently compare different vocabularies. See Q10.
+`program_status` is **not written by this add-on.** It tracks a student's
+enrolment (`exit_date` sits beside it), and it is null until acceptance. The
+insert that creates the row on acceptance sets its starting value, or a column
+`DEFAULT` does, and after that only the database side changes it. IT should
+say what the starting value is.
 
 `accepted_date` is read from workflow history rather than recorded separately:
 the transition is the event, and duplicating it into an annotation would give
 two sources that can disagree.
 
-`rules_version` is the reason this section exists. Income thresholds and GPA
-floors will change between program years; without recording which rule set
-produced a decision, a past outcome cannot be explained to an auditor. Full
-decision history (including superseded decisions from before a resubmission)
-stays in Plone annotations; these columns carry the current one.
+Decision reason, decision time and rules version are **not** written to the
+database (the live table has no columns for them). Full decision history,
+including `rules_version`, stays in Plone annotations, so a past outcome can
+still be explained to an auditor from there.
 
-`exit_date` exists on the table but this add-on never writes it — it belongs
-to enrolment, after acceptance. It's listed in `field_map.NOT_POPULATED`.
+`exit_date` and `program_status` exist on the table but this add-on never
+writes them — they belong to enrolment, after acceptance. Both are listed in
+`field_map.NOT_POPULATED`.
 
 ---
 
 ## 7. Columns IT needs to add or change
 
-Of the 33 columns in the STEP schema, **32 are already mapped**. Six columns
-need adding and three need a type decision.
+`zip_code` must become `text` before go-live; nothing else is required. All 34 columns of `step_student` are
+mapped except `exit_date` and `program_status`, which belong to enrolment and
+are never written by this add-on. IT should say what `program_status` starts as
+for a new row, or give the column a `DEFAULT`.
 
-### Add (6)
+### Deferred
 
-| Column | Type | Why |
+Not written for now, because every application goes to manual review and staff
+work from Plone. Add these to the table if they should reach the database
+later:
+
+| Column | Type | Source |
 |---|---|---|
-| `student_phone_number` | `text` | **The table has no student phone column at all.** The form requires a phone number of every applicant; today it has nowhere to go. |
-| `apartment_number` | `text` | Without it the mailing address is incomplete for any applicant in an apartment building. |
-| `gpa_scale` | `text` | `'4.0'` or `'100'`; makes `cumulative_gpa` interpretable. See Q4. |
-| `decision_reason` | `text` | Why the application was decided as it was. |
-| `decided_at` | `timestamptz` | When. |
-| `rules_version` | `text` | Under which rule set. |
+| `gpa_scale` | `text` | needs a form question first; see Q4 |
+| `decision_reason` | `text` | Plone decision record |
+| `decided_at` | `timestamptz` | Plone decision record |
+| `rules_version` | `text` | Plone decision record |
 
-### Change (3)
+### Change before go-live
 
 | Column | Live type | Needs | Why |
 |---|---|---|---|
-| `zip_code` | `integer` | `text` | **Data loss today.** ZIP+4 (`11451-0001`) cannot be stored at all, and leading zeros are destroyed — NY's own `06390` becomes `6390`. A ZIP is an identifier, never an arithmetic operand. |
-| `state` | `character` | `character(2)` | `information_schema` reports `character` for any `char(n)`, and bare `character` defaults to `char(1)`, which cannot hold `'NY'`. Confirm the length. |
-| `current_grade` | `integer` | `text` | See Q9. |
+| `zip_code` | `integer` | `text` | **Data loss otherwise.** ZIP+4 (`11451-0001`) cannot be stored, and leading zeros are destroyed — NY's own `06390` becomes `6390`. A ZIP is an identifier, never an arithmetic operand. The form stores text and we write text. |
+
+### Handled in the serializer
+
+| Column | Live type | Written as |
+|---|---|---|
+| `current_grade` | `integer` | int, 7–12 (no loss) |
+| `state` | `text` | two-letter code |
 
 ---
 
@@ -302,7 +302,7 @@ reviewer input rather than an applicant field.
 a 0–100 average; others report 4.0. The form currently accepts 0–100 to avoid
 rejecting valid input, which means `cumulative_gpa` alone is ambiguous and
 any GPA rule is unsafe. Either add a `gpa_scale` question to the STEP form
-(our recommendation, and the reason the column is in the mapping) or require
+(our recommendation; the `gpa_scale` column would then need adding, see §7) or require
 one scale and state it on the form.
 
 **Q5 — Should race and ethnicity be separate questions?** Federal and NYSED
@@ -311,7 +311,7 @@ and race as multi-select. The current single combined field cannot produce
 those two report fields, and changing it later is a data migration. Cheap to
 fix now; expensive after the first cohort.
 
-**Q6 — Retention.** How long are rejected applications kept, and is there a
+**Q6 — Retention.** Rejected and undecided applications live only in Plone. How long are they kept, and is there a
 purge requirement? This affects whether the mapping needs a
 `retention_expires_at` column.
 
@@ -331,17 +331,14 @@ is redundant. We'd suggest `application_date` = first `submit` transition,
 applications cannot be ordered; if a waitlist ever needs that, one of them
 should be `timestamptz`.
 
-**Q9 — Should `current_grade` be text or integer?** The live column is
-`integer`. We store text so the column can absorb `'ungraded'`, transfer
-students, or non-US grade labels later without a migration. If the program is
-confident grades are always 7–12 numerics, integer is fine and we'll match it.
+**Q9 — Is `current_grade` always an integer 7–12?** The live column is
+`integer`, so we write an int. A non-numeric value later (`'ungraded'`, a
+transfer student, a non-US label) would need the column changed to `text`
+first.
 
-**Q10 — Does `program_status` mean application status or enrolment status?**
-On the students table, sitting next to `exit_date`, it reads as enrolment
-status (`active`/`exited`/`graduated`). On the applications table we want it
-to hold the Plone workflow state (`draft`…`accepted`/`rejected`). Same name,
-two vocabularies, two tables — workable, but only if it's deliberate and
-documented, or the application one gets its own name.
+**Q10 — Resolved.** `program_status` is enrolment status, owned by the
+database side. Rows are inserted only on acceptance, so the column never holds
+an application state. Still open: what value a new row starts with.
 
 ---
 

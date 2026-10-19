@@ -9,14 +9,13 @@ Two outputs, one mapping:
 Both derive from the same object, so the rules and the database row can never
 disagree about what an applicant answered.
 
-Each program has its own applications table, so a row is only meaningful
+Each program has its own table (step_student / cstep_student), so a row is only meaningful
 alongside the table it belongs to -- see ``field_map.table_for``.
 """
 from plone import api
 from plone.dexterity.utils import iterSchemata
 from plone.uuid.interfaces import IUUID
 from c_step_intake.db import field_map
-from c_step_intake.interfaces import IEligibilityRecord
 from zope.schema import getFieldsInOrder
 
 
@@ -38,13 +37,6 @@ def _major_at_application(obj):
     if major == 'other':
         return getattr(obj, 'major_other', None)
     return major
-
-
-def _gpa_scale(obj):
-    # STEP accepts either a 4.0 GPA or a 100-point average and cannot tell
-    # them apart, because the form does not ask. Null until it does -- see
-    # docs/field_mapping.md Q4. CSTEP has no such column: always 4.0.
-    return None
 
 
 def _application_date(obj):
@@ -75,13 +67,6 @@ def _accepted_date(obj):
     return None
 
 
-def _decision(obj, key):
-    latest = IEligibilityRecord(obj).latest()
-    if latest is None:
-        return None
-    return latest.get(key)
-
-
 #: Column name -> how to compute it from the object.
 DERIVED = {
     'student_id': IUUID,
@@ -89,12 +74,18 @@ DERIVED = {
     'created_date': _created_date,
     'last_update': _last_update,
     'major_at_application': _major_at_application,
-    'gpa_scale': _gpa_scale,
-    'program_status': lambda obj: api.content.get_state(obj=obj, default=None),
     'accepted_date': _accepted_date,
-    'decision_reason': lambda obj: _decision(obj, 'reason'),
-    'decided_at': lambda obj: _decision(obj, 'decided_at'),
-    'rules_version': lambda obj: _decision(obj, 'rules_version'),
+}
+
+
+def grade_to_int(value):
+    return None if value in (None, '') else int(value)
+
+
+#: Columns whose live type differs from the Plone value. Applied to directly
+#: mapped fields only.
+COERCE = {
+    'current_grade': grade_to_int,
 }
 
 
@@ -108,7 +99,9 @@ def to_row(obj):
     row = {}
     for mapping in field_map.columns_for(obj.program):
         if mapping.field:
-            row[mapping.column] = getattr(obj, mapping.field, None)
+            value = getattr(obj, mapping.field, None)
+            row[mapping.column] = COERCE.get(mapping.column, lambda v: v)(
+                value)
         else:
             row[mapping.column] = DERIVED[mapping.column](obj)
     return row
