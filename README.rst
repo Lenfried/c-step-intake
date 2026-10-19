@@ -60,8 +60,7 @@ routes every complete application to ``manual_review``. Nothing is
 auto-rejected. See ``docs/eligibility_rules.md`` for the open questions.
 
 The STEP mapping is reconciled against the live STEP schema: 33 of its 34
-columns are mapped (``exit_date`` is never written). IT must change
-``zip_code`` from integer to text before go-live; four columns that would
+columns are mapped (``exit_date`` is never written). Four columns that would
 carry audit detail are deferred, because every application goes to manual
 review for now. ``docs/field_mapping.md`` section 7 has the list, written for IT.
 
