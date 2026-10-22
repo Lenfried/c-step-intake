@@ -1,0 +1,32 @@
+{
+  "name": "volto-c-step-intake-core",
+  "version": "1.0.0-alpha.0",
+  "description": "Volto side of the STEP and CSTEP application intake: single-page add and edit forms",
+  "main": "src/index.js",
+  "license": "GPL-2.0-only",
+  "keywords": [
+    "volto-addon",
+    "volto",
+    "plone",
+    "react"
+  ],
+  "author": "York College CUNY",
+  "homepage": "https://github.com/Lenfried/c-step-intake#readme",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Lenfried/c-step-intake",
+    "directory": "frontend"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "addons": [],
+  "dependencies": {},
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "semantic-ui-react": "^2.1.5"
+  },
+  "devDependencies": {
+    "vitest": "^3.1.2"
+  }
+}
