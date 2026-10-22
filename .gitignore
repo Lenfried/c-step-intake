@@ -14,3 +14,4 @@ venv/
 htmlcov/
 .idea/
 .vscode/
+node_modules/
