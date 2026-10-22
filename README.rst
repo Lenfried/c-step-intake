@@ -127,6 +127,29 @@ CSTEP applications. Once CSTEP is ready for everyone, move the three files
 from ``profiles/cstep`` back into ``profiles/default`` and drop the profile.
 
 
+Single-page forms
+=================
+
+The add and edit forms for both application types show every fieldset on
+one page, each under its own heading, instead of as tabs.
+
+- **Classic UI:** ``browser/forms.py`` sets ``enable_form_tabbing = False``.
+- **Volto:** the classic setting does not reach Volto, which builds its forms
+  from the ``@types`` schema and draws tabs whenever there is more than one
+  fieldset. The Volto add-on in ``frontend/`` (``volto-c-step-intake-core``)
+  rewrites the schema of these two types as it arrives: it merges the
+  fieldsets into one and puts a read-only heading field at the start of each
+  former fieldset. The backend schema is unchanged.
+
+To use the Volto add-on, add ``volto-c-step-intake-core`` to the Volto
+project's workspace and to its ``addons`` list. The type list is the setting
+``config.settings.cStepIntakeSinglePageFormTypes``. Its tests are plain
+vitest and need no Volto install::
+
+    cd frontend
+    npx vitest run
+
+
 Development
 ===========
 
