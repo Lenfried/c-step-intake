@@ -4,8 +4,10 @@ import logging
 
 from plone import api
 from c_step_intake.db.serializer import to_payload
+from c_step_intake.eligibility.decision import REQUEST_INFO
 from c_step_intake.eligibility.rules import decide
 from c_step_intake.interfaces import IEligibilityRecord
+from c_step_intake.notifications import notify_incomplete_application
 from c_step_intake.notifications import notify_new_application
 
 
@@ -42,6 +44,12 @@ def evaluate_application(obj, event):
     # Only a first submission is news; a resubmission is not a new application.
     if event.transition.id == 'submit':
         notify_new_application(obj, decision)
+
+    # An incomplete submission goes back to the applicant, on every submit
+    # and resubmit that is still missing answers. Complete ones go to staff
+    # review, whatever their eligibility.
+    if decision.outcome == REQUEST_INFO:
+        notify_incomplete_application(obj, decision)
 
     logger.info(
         'Application %s (%s): %s via %s [rules %s]',

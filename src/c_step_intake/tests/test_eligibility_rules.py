@@ -110,6 +110,15 @@ class TestCompleteness(unittest.TestCase):
         decision = rules.decide(rules.CSTEP, cstep_payload(career_aspiration=None))
         self.assertEqual((), decision.missing_fields)
 
+    def test_stem_statement_is_never_required(self):
+        # Condition 3b is either/or with 3a, so an application without a
+        # STEM statement is complete and still goes to staff review.
+        payload = step_payload()
+        payload.pop('stem_statement', None)
+        self.assertNotIn('stem_statement', rules.REQUIRED_AT_SUBMIT[rules.STEP])
+        self.assertEqual('manual_review',
+                         rules.decide(rules.STEP, payload).outcome)
+
     def test_step_and_cstep_require_different_fields(self):
         # A CSTEP payload is not a complete STEP application and vice versa.
         self.assertTrue(rules.missing_fields(rules.STEP, cstep_payload()))

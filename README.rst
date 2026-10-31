@@ -84,6 +84,19 @@ Sites that already have the profile installed need the registry record
 added by re-importing the ``registry`` step of ``c_step_intake:default``.
 
 
+Incomplete-application email
+============================
+
+When a submission or resubmission is missing required answers, the
+application goes back to the applicant (``request_more_info``). The applicant
+is then emailed at ``student_email``. The message lists the missing questions
+by their form labels and links to the edit form. It is sent every time an
+application is sent back this way. It is not sent when staff use "Request
+info" during review. Complete applications go to staff review whatever their
+eligibility, and the applicant gets no email for those. As with the staff
+email, a mail failure is logged rather than blocking the submission.
+
+
 Enabling CSTEP
 ==============
 

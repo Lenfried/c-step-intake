@@ -8,16 +8,40 @@
 
 One rule: **completeness**. If a field in `REQUIRED_AT_SUBMIT` is blank, the
 application returns to the applicant as `request_more_info`, with the missing
-field names in the decision reason.
+field names in the decision reason. The applicant is emailed the missing
+questions (`notifications.notify_incomplete_application`).
 
 Everything else — every complete application, regardless of GPA or income —
-goes to `manual_review` for a human decision. This is deliberate. Auto-reject
+goes to `manual_review` for a human decision. **Program decision
+(2026-10-31):** this stays true even once the eligibility criteria below are
+implemented. Complete applications go to staff review whether or not they
+look eligible; the rules may annotate the decision, but never accept or
+reject on their own. This is deliberate. Auto-reject
 on criteria nobody has signed off is the one failure mode here that harms a
 real applicant and is invisible until someone complains.
 
 `test_eligibility_rules.py` contains a guard test asserting that no payload
 can reach a `reject` outcome. Delete that test in the same commit that adds
 the first reject rule.
+
+## STEP acceptance criteria
+
+ELIGIBLE = Condition 1 **and** Condition 2 **and** Condition 3 (3a **or** 3b).
+
+| Condition | Rule | Form field(s) |
+|---|---|---|
+| 1 | Resides in New York State | `nys_resident` |
+| 2 | Enrolled in grades 7–12 | `current_grade` (offers only 7–12) |
+| 3a | Economically disadvantaged — any one of: free/reduced lunch (verified by school); Family Assistance / Safety Net; Family Day-Care payments; foster care with no money from natural parents; ward of the State or a county; family income at or below the 2022–28 STEP threshold | `free_reduced_lunch`, `other_economic_disadvantage`, `household_income` + `household_size` |
+| 3b | Needs, or would greatly benefit from, STEM enrichment or support — judged by program staff from the student's written statement | `stem_statement` (optional; not stored in `step_student`) |
+
+A student who is not economically disadvantaged can still be eligible on 3b
+alone, and one with no statement can still be eligible on 3a alone, so
+`stem_statement` is optional and an application without it is complete.
+
+Not yet implemented in `rules.py`. Still missing: the 2022–28 income table by
+household size, and a "ward of the State or a county" option in
+`OTHER_ECONOMIC_DISADVANTAGE`. 3b is a staff judgment and cannot be automated.
 
 ## The intended rule set
 

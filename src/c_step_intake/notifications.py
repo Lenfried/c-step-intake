@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Email staff when a new application is submitted."""
+"""Emails sent when an application is submitted.
+
+- Staff get one email per new application.
+- The applicant gets one each time a submission is sent back as incomplete.
+"""
 import logging
 
 from plone import api
+from plone.dexterity.utils import iterSchemata
+from zope.schema import getFields
 
 
 logger = logging.getLogger('c_step_intake')
@@ -43,4 +49,58 @@ def notify_new_application(obj, decision):
     except Exception:
         logger.exception(
             'Could not send the new-application notification for %s',
+            obj.absolute_url_path())
+
+
+INCOMPLETE_SUBJECT = 'Your {program} application needs more information'
+INCOMPLETE_BODY = """\
+Thank you for applying to {program}.
+
+Your application could not be reviewed yet because these questions were not
+answered:
+
+{missing}
+
+Please answer them and submit your application again:
+{url}
+"""
+
+
+def field_titles(obj, names):
+    """Return the form labels of ``names``, in the order given."""
+    titles = {}
+    for schemata in iterSchemata(obj):
+        for name, field in getFields(schemata).items():
+            titles.setdefault(name, str(field.title))
+    return [titles.get(name, name) for name in names]
+
+
+def notify_incomplete_application(obj, decision):
+    """Email the applicant the questions their submission is missing.
+
+    Sent to the applicant's own email address. Never raises, for the same
+    reason as notify_new_application.
+    """
+    try:
+        recipient = getattr(obj, 'student_email', None)
+        if not recipient:
+            logger.warning(
+                'No applicant email on %s; incomplete-application notice '
+                'not sent', obj.absolute_url_path())
+            return
+        missing = '\n'.join(
+            '- {0}'.format(title)
+            for title in field_titles(obj, decision.missing_fields))
+        api.portal.send_email(
+            recipient=recipient,
+            subject=INCOMPLETE_SUBJECT.format(program=obj.program.upper()),
+            body=INCOMPLETE_BODY.format(
+                program=obj.program.upper(),
+                missing=missing,
+                url='{0}/edit'.format(obj.absolute_url()),
+            ),
+        )
+    except Exception:
+        logger.exception(
+            'Could not send the incomplete-application notice for %s',
             obj.absolute_url_path())
