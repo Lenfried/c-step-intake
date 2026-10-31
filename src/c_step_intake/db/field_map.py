@@ -164,6 +164,8 @@ APPLICATIONS = (
 #: to appear either in APPLICATIONS or here.
 UNMAPPED = {
     'major_other': 'Merged into major_at_application.',
+    'stem_statement': 'STEP condition 3b (STEM need). Read by program staff '
+                      'during review in Plone; not stored in step_student.',
 }
 
 #: Columns on the live table that this add-on never populates. They belong to

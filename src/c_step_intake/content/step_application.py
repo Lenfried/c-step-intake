@@ -51,6 +51,12 @@ class IStepApplication(model.Schema):
         ],
     )
 
+    model.fieldset(
+        'statement',
+        label=_('STEM statement'),
+        fields=['stem_statement'],
+    )
+
     school_name = schema.TextLine(
         title=_('School name'),
         required=True,
@@ -118,6 +124,24 @@ class IStepApplication(model.Schema):
 
     parent2_phone = schema.TextLine(
         title=_('Second parent / guardian phone'),
+        required=False,
+    )
+
+    # STEP eligibility condition 3b: an applicant who is not economically
+    # disadvantaged can still qualify on STEM need, which program staff judge
+    # from this statement. It is optional because condition 3a alone also
+    # qualifies, and it is read during review only -- never written to
+    # step_student (see field_map.UNMAPPED).
+    stem_statement = schema.Text(
+        title=_(
+            'How would you express your need of, or how would you greatly '
+            'benefit from, academic enrichment or support in the STEM areas?'
+        ),
+        description=_(
+            'Optional. Program staff read this when reviewing your '
+            'application. It is especially important if none of the '
+            'household questions apply to you.'
+        ),
         required=False,
     )
 
