@@ -10,21 +10,25 @@ student developer to change a rule and what lets us show an auditor exactly
 which inputs produced which outcome.
 
 Current status: the program's automated accept/reject criteria are NOT yet
-defined. Until they are, this module implements only the completeness check
-and routes every complete application to human review. That is the safe
-default -- no applicant is auto-rejected by rules nobody has signed off on.
+defined. Until they are, this module implements only the completeness check,
+and every submission goes to human review. That is the safe default -- no
+applicant is auto-rejected by rules nobody has signed off on.
+
+Incomplete applications go to staff review too, rather than back to the
+applicant: the form already requires every answer the check needs, so an
+incomplete one can only come from staff entry, an import or a later form
+change, and staff are the ones to fix it.
 
 See docs/eligibility_rules.md for the open policy questions blocking the rest.
 """
 from c_step_intake.eligibility.decision import Decision
 from c_step_intake.eligibility.decision import MANUAL_REVIEW
-from c_step_intake.eligibility.decision import REQUEST_INFO
 
 
 #: Bump on every change to the logic below. Recorded on each application at
 #: decision time so a past outcome can always be traced to the rules in force
 #: when it was made.
-RULES_VERSION = '0.1.0-completeness-only'
+RULES_VERSION = '0.2.0-incomplete-to-staff'
 
 STEP = 'step'
 CSTEP = 'cstep'
@@ -92,8 +96,11 @@ def decide(program, payload):
     missing = missing_fields(program, payload)
     if missing:
         return Decision(
-            outcome=REQUEST_INFO,
-            reason='Missing required fields: {0}'.format(', '.join(missing)),
+            outcome=MANUAL_REVIEW,
+            reason=(
+                'Incomplete application, routed to staff review. Missing '
+                'required fields: {0}'.format(', '.join(missing))
+            ),
             rules_version=RULES_VERSION,
             missing_fields=missing,
         )
