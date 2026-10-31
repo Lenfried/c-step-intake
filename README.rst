@@ -34,7 +34,10 @@ How it fits together
               +-- fires the resulting workflow transition
                         |
                         v
-        request_more_info / manual_review / accepted / rejected
+                  manual_review
+                        |
+                        v  (staff)
+        request_more_info / accepted / rejected
 
 The same payload feeds the eligibility rules and the PostgreSQL row, so the
 rules and the database can never disagree about what an applicant answered.
@@ -55,9 +58,10 @@ Current status
 ==============
 
 The program's automated accept/reject criteria are **not yet defined**. Until
-they are, ``eligibility/rules.py`` implements only the completeness check and
-routes every complete application to ``manual_review``. Nothing is
-auto-rejected. See ``docs/eligibility_rules.md`` for the open questions.
+they are, ``eligibility/rules.py`` implements only the completeness check, and
+every submission goes to ``manual_review``, complete or not. An incomplete
+one has its missing fields listed in the decision reason for staff. Nothing
+is auto-rejected. See ``docs/eligibility_rules.md`` for the open questions.
 
 The STEP mapping is reconciled against the live STEP schema: 33 of its 34
 columns are mapped (``exit_date`` is never written). Four columns that would
@@ -82,19 +86,6 @@ send one, and a mail failure is logged rather than blocking the submission.
 Plone must have SMTP configured (Site Setup -> Mail) for this to send.
 Sites that already have the profile installed need the registry record
 added by re-importing the ``registry`` step of ``c_step_intake:default``.
-
-
-Incomplete-application email
-============================
-
-When a submission or resubmission is missing required answers, the
-application goes back to the applicant (``request_more_info``). The applicant
-is then emailed at ``student_email``. The message lists the missing questions
-by their form labels and links to the edit form. It is sent every time an
-application is sent back this way. It is not sent when staff use "Request
-info" during review. Complete applications go to staff review whatever their
-eligibility, and the applicant gets no email for those. As with the staff
-email, a mail failure is logged rather than blocking the submission.
 
 
 Enabling CSTEP

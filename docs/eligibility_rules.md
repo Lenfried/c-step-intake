@@ -2,17 +2,21 @@
 
 **Status:** not yet defined. Nothing is auto-accepted or auto-rejected.
 **Implementation:** [`src/c_step_intake/eligibility/rules.py`](../src/c_step_intake/eligibility/rules.py)
-**Current version:** `0.1.0-completeness-only`
+**Current version:** `0.2.0-incomplete-to-staff`
 
 ## What is implemented today
 
 One rule: **completeness**. If a field in `REQUIRED_AT_SUBMIT` is blank, the
-application returns to the applicant as `request_more_info`, with the missing
-field names in the decision reason. The applicant is emailed the missing
-questions (`notifications.notify_incomplete_application`).
+missing field names are recorded in the decision reason and the decision's
+`missing_fields`. The application still goes to `manual_review`; it is **not**
+sent back to the applicant. The form already requires every one of these
+answers, and applicants cannot save a partial draft, so an incomplete
+application can only come from staff entry, an import or a later form change.
+Staff are the ones to fix it. They can still use "Request info" to send any
+application back to its applicant.
 
 Everything else — every complete application, regardless of GPA or income —
-goes to `manual_review` for a human decision. **Program decision
+also goes to `manual_review` for a human decision. **Program decision
 (2026-10-31):** this stays true even once the eligibility criteria below are
 implemented. Complete applications go to staff review whether or not they
 look eligible; the rules may annotate the decision, but never accept or
@@ -49,7 +53,7 @@ From `ref/Decision Table.xlsx`, first match wins:
 
 | # | Completeness | GPA | Income | Statement | → Decision |
 |---|---|---|---|---|---|
-| 1 | Missing | – | – | – | Request Info |
+| 1 | Missing | – | – | – | Request Info (superseded: now Manual Review, see above) |
 | 2 | Complete | Low | – | – | Reject |
 | 3 | Complete | OK | Missing | No | Request Info |
 | 4 | Complete | OK | Missing | Yes | Manual Review |
@@ -111,3 +115,4 @@ what lets a student developer change a threshold with confidence.
 | Version | Date | Change |
 |---|---|---|
 | `0.1.0-completeness-only` | 2026-09-10 | Initial. Completeness check only; all complete applications route to manual review. |
+| `0.2.0-incomplete-to-staff` | 2026-10-31 | Incomplete applications route to manual review with their missing fields listed, instead of back to the applicant. |

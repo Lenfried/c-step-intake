@@ -11,7 +11,6 @@ from decimal import Decimal
 
 from c_step_intake.eligibility import rules
 from c_step_intake.eligibility.decision import MANUAL_REVIEW
-from c_step_intake.eligibility.decision import REQUEST_INFO
 
 
 def step_payload(**overrides):
@@ -76,9 +75,12 @@ class TestCompleteness(unittest.TestCase):
         decision = rules.decide(rules.CSTEP, cstep_payload())
         self.assertEqual(MANUAL_REVIEW, decision.outcome)
 
-    def test_missing_field_requests_info_and_names_the_field(self):
+    def test_missing_field_goes_to_staff_and_names_the_field(self):
+        # Not sent back to the applicant: the form already requires these
+        # answers, so staff entry or an import is the only way to get here.
         decision = rules.decide(rules.STEP, step_payload(school_name=None))
-        self.assertEqual(REQUEST_INFO, decision.outcome)
+        self.assertEqual(MANUAL_REVIEW, decision.outcome)
+        self.assertEqual('flag_for_review', decision.transition)
         self.assertEqual(('school_name',), decision.missing_fields)
         self.assertIn('school_name', decision.reason)
 
