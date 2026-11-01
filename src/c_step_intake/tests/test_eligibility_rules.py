@@ -121,6 +121,24 @@ class TestCompleteness(unittest.TestCase):
         self.assertEqual('manual_review',
                          rules.decide(rules.STEP, payload).outcome)
 
+    def test_every_categorical_3a_indicator_is_offered(self):
+        # STEP condition 3a: public assistance or family day-care, foster
+        # care, or ward of the State or a county. Stored codes are what
+        # staff and reports read, so they must not change silently.
+        from c_step_intake.vocabularies import OTHER_ECONOMIC_DISADVANTAGE
+        self.assertEqual(
+            ['public_assistance', 'foster_care', 'ward_of_state'],
+            [term.value for term in OTHER_ECONOMIC_DISADVANTAGE],
+        )
+
+    def test_ward_of_state_without_income_is_complete(self):
+        decision = rules.decide(rules.STEP, step_payload(
+            other_economic_disadvantage='ward_of_state',
+            household_income=None,
+        ))
+        self.assertEqual((), decision.missing_fields)
+        self.assertEqual(MANUAL_REVIEW, decision.outcome)
+
     def test_step_and_cstep_require_different_fields(self):
         # A CSTEP payload is not a complete STEP application and vice versa.
         self.assertTrue(rules.missing_fields(rules.STEP, cstep_payload()))

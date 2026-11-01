@@ -106,7 +106,7 @@ APPLICATIONS = (
                  'write -- acceptable for annual household income.'),
     Mapping('other_economic_disadvantage', 'text', BOTH,
             field='other_economic_disadvantage',
-            note='Stores public_assistance or foster_care.'),
+            note='Stores public_assistance, foster_care or ward_of_state.'),
 
     # --- STEP only ------------------------------------------------------
     Mapping('free_reduced_lunch', 'boolean', (STEP,),

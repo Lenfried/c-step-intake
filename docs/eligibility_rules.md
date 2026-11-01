@@ -43,9 +43,14 @@ A student who is not economically disadvantaged can still be eligible on 3b
 alone, and one with no statement can still be eligible on 3a alone, so
 `stem_statement` is optional and an application without it is complete.
 
+The form collects every 3a indicator. "Do any of these apply to you?"
+(`other_economic_disadvantage`) offers Family Assistance / Safety Net and
+Family Day-Care (`public_assistance`), foster care (`foster_care`) and ward of
+the State or a county (`ward_of_state`). It takes one answer, which is enough
+because any one indicator qualifies.
+
 Not yet implemented in `rules.py`. Still missing: the 2022–28 income table by
-household size, and a "ward of the State or a county" option in
-`OTHER_ECONOMIC_DISADVANTAGE`. 3b is a staff judgment and cannot be automated.
+household size. 3b is a staff judgment and cannot be automated.
 
 ## The intended rule set
 

@@ -108,7 +108,8 @@ an annual household figure, but it is a decision rather than an accident.
 
 `household_size` is an integer 1–9, where **9 means "9 or more"**.
 
-`other_economic_disadvantage` stores `public_assistance` or `foster_care`.
+`other_economic_disadvantage` stores `public_assistance`, `foster_care` or
+`ward_of_state`.
 
 `application_date` and `created_date` currently hold the same value (see Q8).
 
