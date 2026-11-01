@@ -159,6 +159,27 @@ vitest and need no Volto install::
     npx vitest run
 
 
+Eligibility panel
+=================
+
+Program staff see an **Eligibility check** panel at the top of each
+submitted application in Volto. It shows the latest decision: the overall
+conclusion, each STEP condition as met / not met / undetermined with the
+answers behind it, any missing required answers, when it was checked, and
+the rules version.
+
+- **Backend:** ``GET <application>/@eligibility`` (``services/``) returns the
+  latest decision to users with ``c_step_intake: Review Application``
+  (Manager, Site Administrator, ProgramDirector, ProgramStaff; granted from
+  submission onwards). Everyone else, including the applicant, gets
+  ``{"available": false}``. It never answers 401, because Volto shows a
+  site-wide error page on a 401. The answers snapshot stored with each
+  decision is not returned.
+- **Volto:** ``ApplicationView`` replaces the default view for both
+  application types. It shows the panel, and the single-page schema's
+  section headings, which the default view would render as empty fields.
+
+
 Development
 ===========
 

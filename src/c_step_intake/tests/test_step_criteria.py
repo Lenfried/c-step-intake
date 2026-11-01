@@ -128,7 +128,13 @@ class TestDecisionCarriesTheAssessment(unittest.TestCase):
     def test_step_decision_records_the_assessment(self):
         decision = rules.decide(rules.STEP, step_payload(
             other_economic_disadvantage='foster_care'))
-        self.assertEqual(5, len(decision.eligibility))
+        data = decision.assessment.as_dict()
+        self.assertEqual(
+            ['1 NYS resident', '2 grade 7-12',
+             '3a economically disadvantaged', '3b STEM need'],
+            [check['condition'] for check in data['checks']])
+        self.assertEqual('met', data['checks'][2]['status'])
+        self.assertEqual('meets the criteria (1, 2 and 3a)', data['overall'])
         self.assertIn('meets the criteria', decision.reason)
 
     def test_failing_the_criteria_still_goes_to_staff(self):
@@ -139,4 +145,4 @@ class TestDecisionCarriesTheAssessment(unittest.TestCase):
 
     def test_cstep_has_no_assessment_yet(self):
         decision = rules.decide(rules.CSTEP, cstep_payload())
-        self.assertEqual((), decision.eligibility)
+        self.assertIsNone(decision.assessment)

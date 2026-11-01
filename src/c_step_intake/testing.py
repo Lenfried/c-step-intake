@@ -16,6 +16,8 @@ class CStepIntakeLayer(PloneSandboxLayer):
         self.loadZCML(package=c_step_intake)
 
     def setUpPloneSite(self, portal):
+        # Grants "Use REST API", as on every Volto site, for @eligibility.
+        applyProfile(portal, 'plone.restapi:default')
         applyProfile(portal, 'c_step_intake:default')
         # Tests exercise both programs; production enables CSTEP separately.
         applyProfile(portal, 'c_step_intake:cstep')

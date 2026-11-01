@@ -1,0 +1,20 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:plone="http://namespaces.plone.org/plone"
+  i18n_domain="c_step_intake">
+
+  <include package="plone.restapi"/>
+
+  <!-- Guarded by View, not the review permission: Volto turns any 401 into
+       a site-wide error page, and applicants open their own applications.
+       The service checks the review permission itself and returns
+       {"available": false} to everyone else. -->
+  <plone:service
+    method="GET"
+    for="c_step_intake.interfaces.IApplication"
+    factory=".eligibility.EligibilityGet"
+    name="@eligibility"
+    permission="zope2.View"
+  />
+
+</configure>
