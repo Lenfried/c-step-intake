@@ -4,6 +4,8 @@
  * Volto's DefaultView, with two changes:
  *
  * - the staff-only eligibility panel at the top;
+ * - date-only fields shown as the day entered (see dateOnly.js), not a day
+ *   early west of UTC;
  * - section headings from the single-page schema. DefaultView would render
  *   each heading field as an empty field, because the merged schema has
  *   only one fieldset.
@@ -20,6 +22,7 @@ import config from '@plone/volto/registry';
 import { getSchema } from '@plone/volto/actions/schema/schema';
 import { getWidget } from '@plone/volto/helpers/Widget/utils';
 import { getBaseUrl } from '@plone/volto/helpers/Url/Url';
+import DateOnlyViewWidget from './DateOnlyViewWidget';
 import EligibilityPanel from './EligibilityPanel';
 import { sectionsOf } from './singlePageForms';
 
@@ -66,7 +69,10 @@ const ApplicationView = ({ content, location }) => {
               id: name,
               widget: getWidget(name, schema.properties[name]),
             };
-            const Widget = views.getWidget(field);
+            const Widget =
+              field.widget === 'date'
+                ? DateOnlyViewWidget
+                : views.getWidget(field);
             return (
               <Grid celled="internally" key={name}>
                 <Grid.Row>
