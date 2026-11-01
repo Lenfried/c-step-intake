@@ -159,6 +159,24 @@ vitest and need no Volto install::
     npx vitest run
 
 
+Pre-filled identity fields
+==========================
+
+When an applicant opens the add form, first name, last name and email are
+pre-filled from their account, and so is CSTEP's EMPLID. ``account_defaults.py`` has
+the functions, used as ``defaultFactory`` on those fields. They apply only
+when the form opens, never overwrite a saved application, and leave a field
+blank when the account has no value (anonymous visitors get blanks too).
+
+What an account carries depends on the site. ``email`` and ``fullname`` are
+standard Plone properties, so email and the first and last name (split from
+``fullname``) work everywhere. ``first_name``, ``last_name`` and ``employeeID``
+are not standard: they are used when the site's login setup (SSO, LDAP, a
+custom member schema) provides them, and EMPLID is only pre-filled from
+``employeeID`` if it is exactly 8 digits. STEP applicants may be minors using
+a parent's account, so check the pre-filled STEP names before relying on them.
+
+
 Eligibility panel
 =================
 
