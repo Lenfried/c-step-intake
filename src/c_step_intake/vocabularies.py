@@ -57,6 +57,8 @@ OTHER_ECONOMIC_DISADVANTAGE = _vocabulary([
     ('foster_care',
      'I am living with foster parents and no financial support is provided by '
      'my natural (biological) parents.'),
+    ('ward_of_state',
+     'I am a ward of the State of New York or of a county.'),
 ])
 
 GRADE_LEVEL = _vocabulary([
