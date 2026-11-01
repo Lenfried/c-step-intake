@@ -57,11 +57,16 @@ Our team owns the field mapping (``src/c_step_intake/db/field_map.py`` and
 Current status
 ==============
 
-The program's automated accept/reject criteria are **not yet defined**. Until
-they are, ``eligibility/rules.py`` implements only the completeness check, and
-every submission goes to ``manual_review``, complete or not. An incomplete
-one has its missing fields listed in the decision reason for staff. Nothing
-is auto-rejected. See ``docs/eligibility_rules.md`` for the open questions.
+Every submission goes to ``manual_review``: the rules never accept or reject
+on their own. They record information for staff with each decision:
+
+- **Completeness:** any missing required fields are listed.
+- **STEP acceptance criteria:** ``eligibility/step_criteria.py`` records which
+  conditions the answers meet (NYS residency, grade 7-12, economic need using
+  the 2026-2027 NYSED income limits, STEM statement), with an overall
+  conclusion. CSTEP criteria are not yet defined.
+
+See ``docs/eligibility_rules.md`` for the criteria and open questions.
 
 The STEP mapping is reconciled against the live STEP schema: 33 of its 34
 columns are mapped (``exit_date`` is never written). Four columns that would

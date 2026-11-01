@@ -1,8 +1,10 @@
 # Eligibility rules
 
-**Status:** not yet defined. Nothing is auto-accepted or auto-rejected.
-**Implementation:** [`src/c_step_intake/eligibility/rules.py`](../src/c_step_intake/eligibility/rules.py)
-**Current version:** `0.2.0-incomplete-to-staff`
+**Status:** STEP criteria are assessed for staff; nothing is auto-accepted or
+auto-rejected. CSTEP criteria are not yet defined.
+**Implementation:** [`src/c_step_intake/eligibility/rules.py`](../src/c_step_intake/eligibility/rules.py),
+[`src/c_step_intake/eligibility/step_criteria.py`](../src/c_step_intake/eligibility/step_criteria.py)
+**Current version:** `0.3.0-step-criteria-2026-27`
 
 ## What is implemented today
 
@@ -36,7 +38,7 @@ ELIGIBLE = Condition 1 **and** Condition 2 **and** Condition 3 (3a **or** 3b).
 |---|---|---|
 | 1 | Resides in New York State | `nys_resident` |
 | 2 | Enrolled in grades 7–12 | `current_grade` (offers only 7–12) |
-| 3a | Economically disadvantaged — any one of: free/reduced lunch (verified by school); Family Assistance / Safety Net; Family Day-Care payments; foster care with no money from natural parents; ward of the State or a county; family income at or below the 2022–28 STEP threshold | `free_reduced_lunch`, `other_economic_disadvantage`, `household_income` + `household_size` |
+| 3a | Economically disadvantaged — any one of: free/reduced lunch (verified by school); Family Assistance / Safety Net; Family Day-Care payments; foster care with no money from natural parents; ward of the State or a county; family income at or below the STEP income limit (table below) | `free_reduced_lunch`, `other_economic_disadvantage`, `household_income` + `household_size` |
 | 3b | Needs, or would greatly benefit from, STEM enrichment or support — judged by program staff from the student's written statement | `stem_statement` (optional; not stored in `step_student`) |
 
 A student who is not economically disadvantaged can still be eligible on 3b
@@ -49,8 +51,48 @@ Family Day-Care (`public_assistance`), foster care (`foster_care`) and ward of
 the State or a county (`ward_of_state`). It takes one answer, which is enough
 because any one indicator qualifies.
 
-Not yet implemented in `rules.py`. Still missing: the 2022–28 income table by
-household size. 3b is a staff judgment and cannot be automated.
+### How the criteria are applied
+
+`step_criteria.assess` checks each condition and records the result on every
+STEP decision (`Decision.eligibility`, stored in the eligibility record). It
+never changes where an application goes: everything goes to staff review.
+Each condition is `met`, `not met` or `undetermined`, with the answers behind
+it, followed by an overall conclusion such as "meets the criteria (1, 2 and
+3a)". The conclusion is also in the decision reason.
+
+- **Free or reduced-price lunch** counts as 3a, but it is self-reported, so the
+  summary says "school to verify".
+- **3b** can only be `undetermined` ("statement provided; staff to judge") or
+  `not met` ("no statement"). Whether a statement shows STEM need is always a
+  staff judgment.
+- An application that fails 3a but has a statement is "meets the criteria
+  only if staff judge the STEM statement shows need (3b)".
+
+### Income limits
+
+NYSED C/STEP & HEOP Income Eligibility Criteria, **2026-2027** column
+(`step_criteria.INCOME_LIMITS`). Income at or below the limit qualifies.
+
+| Household size | Eligible income (2026-2027) |
+|---|---|
+| 1 | $28,953 |
+| 2 | $39,128 |
+| 3 | $49,303 |
+| 4 | $59,478 |
+| 5 | $69,653 |
+| 6 | $79,828 |
+| 7 | $90,003 |
+| 8 | $100,178 |
+
+The form's household size 9 means "9 or more", and the 2026-2027 column stops
+at 8 (only 2027-2028 gives an amount per extra person). Limits rise with
+household size, so income at or below the 8-person limit qualifies any
+household of 9 or more. Above it, the income test is `undetermined` and staff
+check it; no limit is guessed.
+
+To move to another program year, replace `INCOME_LIMITS` and `INCOME_YEAR`
+and bump `RULES_VERSION`. Past decisions keep the version they were made
+under.
 
 ## The intended rule set
 
@@ -121,3 +163,4 @@ what lets a student developer change a threshold with confidence.
 |---|---|---|
 | `0.1.0-completeness-only` | 2026-09-10 | Initial. Completeness check only; all complete applications route to manual review. |
 | `0.2.0-incomplete-to-staff` | 2026-10-31 | Incomplete applications route to manual review with their missing fields listed, instead of back to the applicant. |
+| `0.3.0-step-criteria-2026-27` | 2026-10-31 | STEP acceptance criteria assessed for staff on every decision, using the 2026-2027 income limits. Routing unchanged. |
