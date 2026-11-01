@@ -178,6 +178,9 @@ the rules version.
 - **Volto:** ``ApplicationView`` replaces the default view for both
   application types. It shows the panel, and the single-page schema's
   section headings, which the default view would render as empty fields.
+  It also shows date-only fields such as date of birth as the day entered:
+  Volto's default date display reads "2011-05-01" as midnight UTC and shows
+  it a day early west of UTC (April 30 in New York).
 
 
 Development
