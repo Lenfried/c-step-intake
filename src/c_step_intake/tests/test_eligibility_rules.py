@@ -11,7 +11,6 @@ from decimal import Decimal
 
 from c_step_intake.eligibility import rules
 from c_step_intake.eligibility.decision import MANUAL_REVIEW
-from c_step_intake.eligibility.decision import REQUEST_INFO
 
 
 def step_payload(**overrides):
@@ -76,9 +75,12 @@ class TestCompleteness(unittest.TestCase):
         decision = rules.decide(rules.CSTEP, cstep_payload())
         self.assertEqual(MANUAL_REVIEW, decision.outcome)
 
-    def test_missing_field_requests_info_and_names_the_field(self):
+    def test_missing_field_goes_to_staff_and_names_the_field(self):
+        # Not sent back to the applicant: the form already requires these
+        # answers, so staff entry or an import is the only way to get here.
         decision = rules.decide(rules.STEP, step_payload(school_name=None))
-        self.assertEqual(REQUEST_INFO, decision.outcome)
+        self.assertEqual(MANUAL_REVIEW, decision.outcome)
+        self.assertEqual('flag_for_review', decision.transition)
         self.assertEqual(('school_name',), decision.missing_fields)
         self.assertIn('school_name', decision.reason)
 
@@ -109,6 +111,33 @@ class TestCompleteness(unittest.TestCase):
         # not itself STEM/licensure, and that rule is not yet implemented.
         decision = rules.decide(rules.CSTEP, cstep_payload(career_aspiration=None))
         self.assertEqual((), decision.missing_fields)
+
+    def test_stem_statement_is_never_required(self):
+        # Condition 3b is either/or with 3a, so an application without a
+        # STEM statement is complete and still goes to staff review.
+        payload = step_payload()
+        payload.pop('stem_statement', None)
+        self.assertNotIn('stem_statement', rules.REQUIRED_AT_SUBMIT[rules.STEP])
+        self.assertEqual('manual_review',
+                         rules.decide(rules.STEP, payload).outcome)
+
+    def test_every_categorical_3a_indicator_is_offered(self):
+        # STEP condition 3a: public assistance or family day-care, foster
+        # care, or ward of the State or a county. Stored codes are what
+        # staff and reports read, so they must not change silently.
+        from c_step_intake.vocabularies import OTHER_ECONOMIC_DISADVANTAGE
+        self.assertEqual(
+            ['public_assistance', 'foster_care', 'ward_of_state'],
+            [term.value for term in OTHER_ECONOMIC_DISADVANTAGE],
+        )
+
+    def test_ward_of_state_without_income_is_complete(self):
+        decision = rules.decide(rules.STEP, step_payload(
+            other_economic_disadvantage='ward_of_state',
+            household_income=None,
+        ))
+        self.assertEqual((), decision.missing_fields)
+        self.assertEqual(MANUAL_REVIEW, decision.outcome)
 
     def test_step_and_cstep_require_different_fields(self):
         # A CSTEP payload is not a complete STEP application and vice versa.

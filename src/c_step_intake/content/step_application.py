@@ -51,6 +51,12 @@ class IStepApplication(model.Schema):
         ],
     )
 
+    model.fieldset(
+        'statement',
+        label=_('STEM statement'),
+        fields=['stem_statement'],
+    )
+
     school_name = schema.TextLine(
         title=_('School name'),
         required=True,
@@ -63,8 +69,9 @@ class IStepApplication(model.Schema):
     )
 
     # High schools in New York City commonly report a 0-100 average rather
-    # than a 4.0 GPA, so the range accepts both. Which scale a given number
-    # is on cannot be inferred reliably -- see docs/field_mapping.md, Q4.
+    # than a 4.0 GPA. No upper bound is enforced; only negative values are
+    # rejected. Which scale a given number is on cannot be inferred
+    # reliably -- see docs/field_mapping.md, Q4.
     cumulative_gpa = schema.Decimal(
         title=_('Cumulative GPA'),
         description=_(
@@ -72,7 +79,6 @@ class IStepApplication(model.Schema):
             '4.0 scale or a 100-point scale.'
         ),
         min=Decimal('0'),
-        max=Decimal('100'),
         required=True,
     )
 
@@ -118,6 +124,24 @@ class IStepApplication(model.Schema):
 
     parent2_phone = schema.TextLine(
         title=_('Second parent / guardian phone'),
+        required=False,
+    )
+
+    # STEP eligibility condition 3b: an applicant who is not economically
+    # disadvantaged can still qualify on STEM need, which program staff judge
+    # from this statement. It is optional because condition 3a alone also
+    # qualifies, and it is read during review only -- never written to
+    # step_student (see field_map.UNMAPPED).
+    stem_statement = schema.Text(
+        title=_(
+            'How would you express your need of, or how would you greatly '
+            'benefit from, academic enrichment or support in the STEM areas?'
+        ),
+        description=_(
+            'Optional. Program staff read this when reviewing your '
+            'application. It is especially important if none of the '
+            'household questions apply to you.'
+        ),
         required=False,
     )
 

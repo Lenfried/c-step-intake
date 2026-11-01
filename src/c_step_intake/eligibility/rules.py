@@ -9,22 +9,30 @@ milliseconds with no Plone site fixture, which is what makes it safe for a
 student developer to change a rule and what lets us show an auditor exactly
 which inputs produced which outcome.
 
-Current status: the program's automated accept/reject criteria are NOT yet
-defined. Until they are, this module implements only the completeness check
-and routes every complete application to human review. That is the safe
-default -- no applicant is auto-rejected by rules nobody has signed off on.
+Every submission goes to staff review, complete or not, eligible or not:
+the program decided that the rules never accept or reject on their own. What
+the rules add is information for staff:
 
-See docs/eligibility_rules.md for the open policy questions blocking the rest.
+- the completeness check lists any missing required fields;
+- for STEP, ``step_criteria.assess`` records which acceptance criteria the
+  answers meet (``Decision.assessment``).
+
+Incomplete applications go to staff review too, rather than back to the
+applicant: the form already requires every answer the check needs, so an
+incomplete one can only come from staff entry, an import or a later form
+change, and staff are the ones to fix it.
+
+See docs/eligibility_rules.md for the criteria and open policy questions.
 """
 from c_step_intake.eligibility.decision import Decision
 from c_step_intake.eligibility.decision import MANUAL_REVIEW
-from c_step_intake.eligibility.decision import REQUEST_INFO
+from c_step_intake.eligibility import step_criteria
 
 
 #: Bump on every change to the logic below. Recorded on each application at
 #: decision time so a past outcome can always be traced to the rules in force
 #: when it was made.
-RULES_VERSION = '0.1.0-completeness-only'
+RULES_VERSION = '0.3.0-step-criteria-2026-27'
 
 STEP = 'step'
 CSTEP = 'cstep'
@@ -91,30 +99,23 @@ def decide(program, payload):
 
     missing = missing_fields(program, payload)
     if missing:
-        return Decision(
-            outcome=REQUEST_INFO,
-            reason='Missing required fields: {0}'.format(', '.join(missing)),
-            rules_version=RULES_VERSION,
-            missing_fields=missing,
+        reason = (
+            'Incomplete application, routed to staff review. Missing '
+            'required fields: {0}.'.format(', '.join(missing))
         )
+    else:
+        reason = 'Application is complete, routed to staff review.'
 
-    # TODO(program policy): the GPA and household-income rules go here, ahead
-    # of the fallthrough below. Four questions must be answered first --
-    # they change the outcome, not just the wording. See
-    # docs/eligibility_rules.md:
-    #   1. Does underrepresented-minority status satisfy eligibility on its
-    #      own, independent of household income?
-    #   2. Do the economic-disadvantage indicators (free/reduced lunch, public
-    #      assistance, foster care) override the income test?
-    #   3. What GPA floor applies, on what scale, per program?
-    #   4. What are the income thresholds by household size, and for which
-    #      program year?
+    # STEP only: CSTEP's criteria are not defined yet.
+    assessment = None
+    if program == STEP:
+        assessment = step_criteria.assess(payload)
+        reason += ' STEP criteria: {0}.'.format(assessment.overall)
+
     return Decision(
         outcome=MANUAL_REVIEW,
-        reason=(
-            'Application is complete. Automated eligibility criteria are not '
-            'yet defined, so every complete application is routed to staff '
-            'review.'
-        ),
+        reason=reason,
         rules_version=RULES_VERSION,
+        missing_fields=missing,
+        assessment=assessment,
     )

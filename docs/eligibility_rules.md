@@ -1,17 +1,28 @@
 # Eligibility rules
 
-**Status:** not yet defined. Nothing is auto-accepted or auto-rejected.
-**Implementation:** [`src/c_step_intake/eligibility/rules.py`](../src/c_step_intake/eligibility/rules.py)
-**Current version:** `0.1.0-completeness-only`
+**Status:** STEP criteria are assessed for staff; nothing is auto-accepted or
+auto-rejected. CSTEP criteria are not yet defined.
+**Implementation:** [`src/c_step_intake/eligibility/rules.py`](../src/c_step_intake/eligibility/rules.py),
+[`src/c_step_intake/eligibility/step_criteria.py`](../src/c_step_intake/eligibility/step_criteria.py)
+**Current version:** `0.3.0-step-criteria-2026-27`
 
 ## What is implemented today
 
 One rule: **completeness**. If a field in `REQUIRED_AT_SUBMIT` is blank, the
-application returns to the applicant as `request_more_info`, with the missing
-field names in the decision reason.
+missing field names are recorded in the decision reason and the decision's
+`missing_fields`. The application still goes to `manual_review`; it is **not**
+sent back to the applicant. The form already requires every one of these
+answers, and applicants cannot save a partial draft, so an incomplete
+application can only come from staff entry, an import or a later form change.
+Staff are the ones to fix it. They can still use "Request info" to send any
+application back to its applicant.
 
 Everything else — every complete application, regardless of GPA or income —
-goes to `manual_review` for a human decision. This is deliberate. Auto-reject
+also goes to `manual_review` for a human decision. **Program decision
+(2026-10-31):** this stays true even once the eligibility criteria below are
+implemented. Complete applications go to staff review whether or not they
+look eligible; the rules may annotate the decision, but never accept or
+reject on their own. This is deliberate. Auto-reject
 on criteria nobody has signed off is the one failure mode here that harms a
 real applicant and is invisible until someone complains.
 
@@ -19,13 +30,77 @@ real applicant and is invisible until someone complains.
 can reach a `reject` outcome. Delete that test in the same commit that adds
 the first reject rule.
 
+## STEP acceptance criteria
+
+ELIGIBLE = Condition 1 **and** Condition 2 **and** Condition 3 (3a **or** 3b).
+
+| Condition | Rule | Form field(s) |
+|---|---|---|
+| 1 | Resides in New York State | `nys_resident` |
+| 2 | Enrolled in grades 7–12 | `current_grade` (offers only 7–12) |
+| 3a | Economically disadvantaged — any one of: free/reduced lunch (verified by school); Family Assistance / Safety Net; Family Day-Care payments; foster care with no money from natural parents; ward of the State or a county; family income at or below the STEP income limit (table below) | `free_reduced_lunch`, `other_economic_disadvantage`, `household_income` + `household_size` |
+| 3b | Needs, or would greatly benefit from, STEM enrichment or support — judged by program staff from the student's written statement | `stem_statement` (optional; not stored in `step_student`) |
+
+A student who is not economically disadvantaged can still be eligible on 3b
+alone, and one with no statement can still be eligible on 3a alone, so
+`stem_statement` is optional and an application without it is complete.
+
+The form collects every 3a indicator. "Do any of these apply to you?"
+(`other_economic_disadvantage`) offers Family Assistance / Safety Net and
+Family Day-Care (`public_assistance`), foster care (`foster_care`) and ward of
+the State or a county (`ward_of_state`). It takes one answer, which is enough
+because any one indicator qualifies.
+
+### How the criteria are applied
+
+`step_criteria.assess` checks each condition and records the result on every
+STEP decision (`Decision.eligibility`, stored in the eligibility record). It
+never changes where an application goes: everything goes to staff review.
+Each condition is `met`, `not met` or `undetermined`, with the answers behind
+it, followed by an overall conclusion such as "meets the criteria (1, 2 and
+3a)". The conclusion is also in the decision reason.
+
+- **Free or reduced-price lunch** counts as 3a, but it is self-reported, so the
+  summary says "school to verify".
+- **3b** can only be `undetermined` ("statement provided; staff to judge") or
+  `not met` ("no statement"). Whether a statement shows STEM need is always a
+  staff judgment.
+- An application that fails 3a but has a statement is "meets the criteria
+  only if staff judge the STEM statement shows need (3b)".
+
+### Income limits
+
+NYSED C/STEP & HEOP Income Eligibility Criteria, **2026-2027** column
+(`step_criteria.INCOME_LIMITS`). Income at or below the limit qualifies.
+
+| Household size | Eligible income (2026-2027) |
+|---|---|
+| 1 | $28,953 |
+| 2 | $39,128 |
+| 3 | $49,303 |
+| 4 | $59,478 |
+| 5 | $69,653 |
+| 6 | $79,828 |
+| 7 | $90,003 |
+| 8 | $100,178 |
+
+The form's household size 9 means "9 or more", and the 2026-2027 column stops
+at 8 (only 2027-2028 gives an amount per extra person). Limits rise with
+household size, so income at or below the 8-person limit qualifies any
+household of 9 or more. Above it, the income test is `undetermined` and staff
+check it; no limit is guessed.
+
+To move to another program year, replace `INCOME_LIMITS` and `INCOME_YEAR`
+and bump `RULES_VERSION`. Past decisions keep the version they were made
+under.
+
 ## The intended rule set
 
 From `ref/Decision Table.xlsx`, first match wins:
 
 | # | Completeness | GPA | Income | Statement | → Decision |
 |---|---|---|---|---|---|
-| 1 | Missing | – | – | – | Request Info |
+| 1 | Missing | – | – | – | Request Info (superseded: now Manual Review, see above) |
 | 2 | Complete | Low | – | – | Reject |
 | 3 | Complete | OK | Missing | No | Request Info |
 | 4 | Complete | OK | Missing | Yes | Manual Review |
@@ -87,3 +162,5 @@ what lets a student developer change a threshold with confidence.
 | Version | Date | Change |
 |---|---|---|
 | `0.1.0-completeness-only` | 2026-09-10 | Initial. Completeness check only; all complete applications route to manual review. |
+| `0.2.0-incomplete-to-staff` | 2026-10-31 | Incomplete applications route to manual review with their missing fields listed, instead of back to the applicant. |
+| `0.3.0-step-criteria-2026-27` | 2026-10-31 | STEP acceptance criteria assessed for staff on every decision, using the 2026-2027 income limits. Routing unchanged. |

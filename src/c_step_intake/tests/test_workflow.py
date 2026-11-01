@@ -53,11 +53,15 @@ class TestApplicationWorkflow(unittest.TestCase):
         self.assertEqual('manual_review',
                          api.content.get_state(application))
 
-    def test_submit_returns_an_incomplete_application_to_the_applicant(self):
+    def test_submit_routes_an_incomplete_application_to_manual_review(self):
+        # Staff fix incomplete applications; they are not sent back to the
+        # applicant. The missing fields are recorded for them.
         application = self._application(school_name=None)
         api.content.transition(obj=application, transition='submit')
-        self.assertEqual('request_more_info',
+        self.assertEqual('manual_review',
                          api.content.get_state(application))
+        latest = IEligibilityRecord(application).latest()
+        self.assertEqual(['school_name'], latest['missing_fields'])
 
     def test_submit_records_the_decision(self):
         application = self._application()
@@ -72,16 +76,17 @@ class TestApplicationWorkflow(unittest.TestCase):
     def test_resubmitting_appends_a_second_decision(self):
         application = self._application(school_name=None)
         api.content.transition(obj=application, transition='submit')
+        api.content.transition(obj=application, transition='request_info')
         application.school_name = 'York Early College Academy'
         api.content.transition(obj=application, transition='resubmit')
         self.assertEqual('manual_review',
                          api.content.get_state(application))
-        # The first outcome is retained: an audit must be able to see that the
-        # application was once incomplete.
+        # The first decision is retained: an audit must be able to see that
+        # the application was once incomplete.
         record = IEligibilityRecord(application)
         self.assertEqual(
-            ['request_info', 'manual_review'],
-            [entry['outcome'] for entry in record.entries()],
+            [['school_name'], []],
+            [entry['missing_fields'] for entry in record.entries()],
         )
 
     def test_handler_does_not_recurse(self):

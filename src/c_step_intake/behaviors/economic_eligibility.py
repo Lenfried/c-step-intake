@@ -53,7 +53,7 @@ class IEconomicEligibility(model.Schema):
     )
 
     other_economic_disadvantage = schema.Choice(
-        title=_('Do either of these apply to you?'),
+        title=_('Do any of these apply to you?'),
         description=_('Optional. Select one if it applies.'),
         vocabulary=OTHER_ECONOMIC_DISADVANTAGE,
         required=False,

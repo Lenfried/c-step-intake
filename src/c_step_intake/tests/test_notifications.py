@@ -45,10 +45,10 @@ class TestNotifications(unittest.TestCase):
         self.assertNotIn(self.application.last_name, kwargs['body'])
 
     def test_resubmit_does_not_send(self):
-        self.application.school_name = None
         with mock.patch(SEND) as send:
             api.content.transition(obj=self.application, transition='submit')
-            self.application.school_name = 'York Early College Academy'
+            api.content.transition(
+                obj=self.application, transition='request_info')
             api.content.transition(
                 obj=self.application, transition='resubmit')
         self.assertEqual(1, send.call_count)

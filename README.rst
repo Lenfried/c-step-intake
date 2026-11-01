@@ -34,7 +34,10 @@ How it fits together
               +-- fires the resulting workflow transition
                         |
                         v
-        request_more_info / manual_review / accepted / rejected
+                  manual_review
+                        |
+                        v  (staff)
+        request_more_info / accepted / rejected
 
 The same payload feeds the eligibility rules and the PostgreSQL row, so the
 rules and the database can never disagree about what an applicant answered.
@@ -54,10 +57,16 @@ Our team owns the field mapping (``src/c_step_intake/db/field_map.py`` and
 Current status
 ==============
 
-The program's automated accept/reject criteria are **not yet defined**. Until
-they are, ``eligibility/rules.py`` implements only the completeness check and
-routes every complete application to ``manual_review``. Nothing is
-auto-rejected. See ``docs/eligibility_rules.md`` for the open questions.
+Every submission goes to ``manual_review``: the rules never accept or reject
+on their own. They record information for staff with each decision:
+
+- **Completeness:** any missing required fields are listed.
+- **STEP acceptance criteria:** ``eligibility/step_criteria.py`` records which
+  conditions the answers meet (NYS residency, grade 7-12, economic need using
+  the 2026-2027 NYSED income limits, STEM statement), with an overall
+  conclusion. CSTEP criteria are not yet defined.
+
+See ``docs/eligibility_rules.md`` for the criteria and open questions.
 
 The STEP mapping is reconciled against the live STEP schema: 33 of its 34
 columns are mapped (``exit_date`` is never written). Four columns that would
@@ -148,6 +157,30 @@ vitest and need no Volto install::
 
     cd frontend
     npx vitest run
+
+
+Eligibility panel
+=================
+
+Program staff see an **Eligibility check** panel at the top of each
+submitted application in Volto. It shows the latest decision: the overall
+conclusion, each STEP condition as met / not met / undetermined with the
+answers behind it, any missing required answers, when it was checked, and
+the rules version.
+
+- **Backend:** ``GET <application>/@eligibility`` (``services/``) returns the
+  latest decision to users with ``c_step_intake: Review Application``
+  (Manager, Site Administrator, ProgramDirector, ProgramStaff; granted from
+  submission onwards). Everyone else, including the applicant, gets
+  ``{"available": false}``. It never answers 401, because Volto shows a
+  site-wide error page on a 401. The answers snapshot stored with each
+  decision is not returned.
+- **Volto:** ``ApplicationView`` replaces the default view for both
+  application types. It shows the panel, and the single-page schema's
+  section headings, which the default view would render as empty fields.
+  It also shows date-only fields such as date of birth as the day entered:
+  Volto's default date display reads "2011-05-01" as midnight UTC and shows
+  it a day early west of UTC (April 30 in New York).
 
 
 Development

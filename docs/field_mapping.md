@@ -108,7 +108,8 @@ an annual household figure, but it is a decision rather than an accident.
 
 `household_size` is an integer 1–9, where **9 means "9 or more"**.
 
-`other_economic_disadvantage` stores `public_assistance` or `foster_care`.
+`other_economic_disadvantage` stores `public_assistance`, `foster_care` or
+`ward_of_state`.
 
 `application_date` and `created_date` currently hold the same value (see Q8).
 
@@ -151,6 +152,10 @@ is no longer any need for a shared `application_gpa` column aliasing STEP's
 
 `current_grade` is written as an integer (7–12) to match the live column. See
 Q9.
+
+`stem_statement` (STEP eligibility condition 3b, STEM need) is deliberately
+**not** written to `step_student`. Program staff read it in Plone during
+review, so it is listed in `field_map.UNMAPPED` and needs no column.
 
 ---
 

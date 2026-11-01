@@ -106,7 +106,7 @@ APPLICATIONS = (
                  'write -- acceptable for annual household income.'),
     Mapping('other_economic_disadvantage', 'text', BOTH,
             field='other_economic_disadvantage',
-            note='Stores public_assistance or foster_care.'),
+            note='Stores public_assistance, foster_care or ward_of_state.'),
 
     # --- STEP only ------------------------------------------------------
     Mapping('free_reduced_lunch', 'boolean', (STEP,),
@@ -164,6 +164,8 @@ APPLICATIONS = (
 #: to appear either in APPLICATIONS or here.
 UNMAPPED = {
     'major_other': 'Merged into major_at_application.',
+    'stem_statement': 'STEP condition 3b (STEM need). Read by program staff '
+                      'during review in Plone; not stored in step_student.',
 }
 
 #: Columns on the live table that this add-on never populates. They belong to

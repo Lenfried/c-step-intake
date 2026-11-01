@@ -5,7 +5,10 @@ No Plone imports here or anywhere else in this package -- see rules.py.
 """
 from dataclasses import dataclass
 from dataclasses import field
+from typing import Optional
 from typing import Tuple
+
+from c_step_intake.eligibility.step_criteria import Assessment
 
 
 ACCEPT = 'accept'
@@ -30,6 +33,9 @@ class Decision:
     reason: str
     rules_version: str
     missing_fields: Tuple[str, ...] = field(default=())
+    #: The acceptance criteria assessment, for staff. None for programs
+    #: whose criteria are not defined (CSTEP).
+    assessment: Optional[Assessment] = None
 
     @property
     def transition(self):

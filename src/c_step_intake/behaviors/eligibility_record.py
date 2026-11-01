@@ -36,6 +36,8 @@ class EligibilityRecord(object):
             'reason': decision.reason,
             'rules_version': decision.rules_version,
             'missing_fields': list(decision.missing_fields),
+            'eligibility': (decision.assessment.as_dict()
+                            if decision.assessment else None),
             'decided_at': datetime.utcnow(),
             'payload': PersistentDict(payload),
         }))
