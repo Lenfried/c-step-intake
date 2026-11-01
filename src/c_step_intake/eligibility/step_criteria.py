@@ -74,6 +74,17 @@ class Assessment:
         return tuple(str(check) for check in self.checks) + (
             'Overall: {0}'.format(self.overall),)
 
+    def as_dict(self):
+        """Return plain data, for the eligibility record and the API."""
+        return {
+            'checks': [
+                {'condition': c.condition, 'status': c.status,
+                 'detail': c.detail}
+                for c in self.checks
+            ],
+            'overall': self.overall,
+        }
+
 
 def _money(amount):
     return '${0:,.0f}'.format(amount)

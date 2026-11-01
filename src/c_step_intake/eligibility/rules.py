@@ -15,7 +15,7 @@ the rules add is information for staff:
 
 - the completeness check lists any missing required fields;
 - for STEP, ``step_criteria.assess`` records which acceptance criteria the
-  answers meet (``Decision.eligibility``).
+  answers meet (``Decision.assessment``).
 
 Incomplete applications go to staff review too, rather than back to the
 applicant: the form already requires every answer the check needs, so an
@@ -107,10 +107,9 @@ def decide(program, payload):
         reason = 'Application is complete, routed to staff review.'
 
     # STEP only: CSTEP's criteria are not defined yet.
-    eligibility = ()
+    assessment = None
     if program == STEP:
         assessment = step_criteria.assess(payload)
-        eligibility = assessment.lines()
         reason += ' STEP criteria: {0}.'.format(assessment.overall)
 
     return Decision(
@@ -118,5 +117,5 @@ def decide(program, payload):
         reason=reason,
         rules_version=RULES_VERSION,
         missing_fields=missing,
-        eligibility=eligibility,
+        assessment=assessment,
     )

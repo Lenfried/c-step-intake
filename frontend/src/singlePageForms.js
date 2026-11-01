@@ -101,3 +101,37 @@ export function singlePageFormsExtender(getSchemaAction, getTypes) {
 
   return (stack) => [tag, ...stack, rewrite];
 }
+
+/**
+ * Split a schema into display sections: ``[{ id, title, fields }]``.
+ *
+ * Works on a merged schema (sections start at heading fields) and on an
+ * unmerged one (sections are the fieldsets). Heading fields are not
+ * included in ``fields``. The first section's title is null when it is the
+ * ``default`` fieldset, which has no heading.
+ */
+export function sectionsOf(schema) {
+  const sections = [];
+  (schema?.fieldsets || []).forEach((fieldset) => {
+    let section = {
+      id: fieldset.id,
+      title: fieldset.id === 'default' ? null : fieldset.title,
+      fields: [],
+    };
+    sections.push(section);
+    fieldset.fields.forEach((name) => {
+      const property = schema.properties?.[name];
+      if (property?.widget === HEADING_WIDGET) {
+        section = {
+          id: name.slice(HEADING_PREFIX.length),
+          title: property.title,
+          fields: [],
+        };
+        sections.push(section);
+      } else {
+        section.fields.push(name);
+      }
+    });
+  });
+  return sections.filter((section) => section.fields.length > 0);
+}

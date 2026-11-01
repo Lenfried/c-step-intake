@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   HEADING_WIDGET,
   schemaTypeOf,
+  sectionsOf,
   singlePageFormsExtender,
   toSinglePage,
 } from './singlePageForms';
@@ -91,24 +92,51 @@ describe('singlePageFormsExtender', () => {
   };
 
   function dispatchThrough(types, path) {
-    const stack = singlePageFormsExtender('GET_SCHEMA', () => types)([
-      fakeApi,
-    ]);
+    const stack = singlePageFormsExtender('GET_SCHEMA', () => types)([fakeApi]);
     const seen = [];
     const dispatch = stack
       .map((middleware) => middleware({}))
-      .reduceRight((next, mw) => mw(next), (action) => seen.push(action));
+      .reduceRight(
+        (next, mw) => mw(next),
+        (action) => seen.push(action),
+      );
     dispatch({ type: 'GET_SCHEMA', request: { op: 'get', path } });
     return seen[0];
   }
 
   it('rewrites the schema of a configured type', () => {
-    const action = dispatchThrough(['step_application'], '/@types/step_application');
+    const action = dispatchThrough(
+      ['step_application'],
+      '/@types/step_application',
+    );
     expect(action.result.fieldsets).toHaveLength(1);
   });
 
   it('leaves other types alone', () => {
     const action = dispatchThrough(['step_application'], '/@types/Document');
     expect(action.result).toBe(schema);
+  });
+});
+
+describe('sectionsOf', () => {
+  it('splits a merged schema back into sections at the headings', () => {
+    expect(sectionsOf(toSinglePage(schema))).toEqual([
+      { id: 'default', title: null, fields: ['first_name'] },
+      { id: 'school', title: 'School', fields: ['school_name'] },
+      { id: 'household', title: 'Household', fields: ['household_size'] },
+    ]);
+  });
+
+  it('gives the same sections for an unmerged schema', () => {
+    expect(sectionsOf(schema)).toEqual(sectionsOf(toSinglePage(schema)));
+  });
+
+  it('drops empty sections and copes with no schema', () => {
+    const empty = {
+      ...schema,
+      fieldsets: [{ id: 'default', title: 'Default', fields: [] }],
+    };
+    expect(sectionsOf(empty)).toEqual([]);
+    expect(sectionsOf(null)).toEqual([]);
   });
 });

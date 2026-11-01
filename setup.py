@@ -42,6 +42,7 @@ setup(
         'setuptools',
         'plone.api>=1.8.4',
         'plone.app.dexterity',
+        'plone.restapi',
         'plone.schema',
         'Products.CMFPlone>=6.0',
     ],

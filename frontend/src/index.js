@@ -1,4 +1,5 @@
 import { GET_SCHEMA } from '@plone/volto/constants/ActionTypes';
+import ApplicationView from './ApplicationView';
 import FieldsetHeadingWidget from './FieldsetHeadingWidget';
 import { HEADING_WIDGET, singlePageFormsExtender } from './singlePageForms';
 
@@ -15,5 +16,11 @@ export default function applyConfig(config) {
       () => config.settings.cStepIntakeSinglePageFormTypes || [],
     ),
   ];
+  // Section headings, plus the staff-only eligibility panel.
+  config.views.contentTypesViews = {
+    ...config.views.contentTypesViews,
+    step_application: ApplicationView,
+    cstep_application: ApplicationView,
+  };
   return config;
 }
