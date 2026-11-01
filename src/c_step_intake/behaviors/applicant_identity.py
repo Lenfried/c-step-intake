@@ -12,6 +12,7 @@ from plone.autoform.interfaces import IFormFieldProvider
 from plone.schema import Email
 from plone.supermodel import model
 from c_step_intake import _
+from c_step_intake import defaults
 from c_step_intake.vocabularies import ETHNICITY
 from c_step_intake.vocabularies import GENDER
 from z3c.form.browser.radio import RadioFieldWidget
@@ -56,11 +57,13 @@ class IApplicantIdentity(model.Schema):
 
     first_name = schema.TextLine(
         title=_('First name'),
+        defaultFactory=defaults.first_name,
         required=True,
     )
 
     last_name = schema.TextLine(
         title=_('Last name'),
+        defaultFactory=defaults.last_name,
         required=True,
     )
 
@@ -84,6 +87,7 @@ class IApplicantIdentity(model.Schema):
     student_email = Email(
         title=_('Email'),
         description=_('The applicant’s own email address.'),
+        defaultFactory=defaults.email,
         required=True,
     )
 
