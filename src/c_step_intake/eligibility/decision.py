@@ -30,6 +30,9 @@ class Decision:
     reason: str
     rules_version: str
     missing_fields: Tuple[str, ...] = field(default=())
+    #: One line per acceptance criterion plus an overall line, for staff.
+    #: Empty for programs whose criteria are not defined (CSTEP).
+    eligibility: Tuple[str, ...] = field(default=())
 
     @property
     def transition(self):
