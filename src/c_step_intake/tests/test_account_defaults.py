@@ -5,14 +5,14 @@ from unittest import mock
 from plone.app.testing import logout
 from plone.app.testing import setRoles
 from plone.app.testing import TEST_USER_ID
-from c_step_intake import defaults
+from c_step_intake import account_defaults
 from c_step_intake.behaviors.applicant_identity import IApplicantIdentity
 from c_step_intake.content.cstep_application import ICstepApplication
 from c_step_intake.testing import C_STEP_INTAKE_INTEGRATION_TESTING
 
 import unittest
 
-USER = 'c_step_intake.defaults.api.user.get_current'
+USER = 'c_step_intake.account_defaults.api.user.get_current'
 
 
 class FakeUser(object):
@@ -37,8 +37,8 @@ ALL = {
     'first_name': 'Grace', 'last_name': 'Hopper',
     'email': 'grace@example.edu', 'employeeID': '12345678',
 }
-FUNCTIONS = (defaults.first_name, defaults.last_name,
-             defaults.email, defaults.emplid)
+FUNCTIONS = (account_defaults.first_name, account_defaults.last_name,
+             account_defaults.email, account_defaults.emplid)
 
 
 class TestDefaults(unittest.TestCase):
@@ -51,15 +51,15 @@ class TestDefaults(unittest.TestCase):
 
     def test_names_email_and_emplid_come_from_the_account(self):
         with as_user(**ALL):
-            self.assertEqual('Grace', defaults.first_name())
-            self.assertEqual('Hopper', defaults.last_name())
-            self.assertEqual('grace@example.edu', defaults.email())
-            self.assertEqual('12345678', defaults.emplid())
+            self.assertEqual('Grace', account_defaults.first_name())
+            self.assertEqual('Hopper', account_defaults.last_name())
+            self.assertEqual('grace@example.edu', account_defaults.email())
+            self.assertEqual('12345678', account_defaults.emplid())
 
     def test_name_falls_back_to_the_full_name(self):
         with as_user(fullname='Ada King Lovelace'):
-            self.assertEqual('Ada', defaults.first_name())
-            self.assertEqual('King Lovelace', defaults.last_name())
+            self.assertEqual('Ada', account_defaults.first_name())
+            self.assertEqual('King Lovelace', account_defaults.last_name())
 
     def test_missing_values_are_none_not_a_string(self):
         with as_user():
@@ -72,7 +72,7 @@ class TestDefaults(unittest.TestCase):
     def test_an_invalid_emplid_is_not_prefilled(self):
         for bad in ('1234567', '123456789', 'abcd1234'):
             with as_user(employeeID=bad):
-                self.assertIsNone(defaults.emplid(), bad)
+                self.assertIsNone(account_defaults.emplid(), bad)
 
     def test_the_real_test_user_works_with_standard_properties(self):
         # No mocking: the site's own account, which has no custom properties.
