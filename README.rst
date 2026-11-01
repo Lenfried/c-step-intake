@@ -163,7 +163,7 @@ Pre-filled identity fields
 ==========================
 
 When an applicant opens the add form, first name, last name and email are
-pre-filled from their account, and so is CSTEP's EMPLID. ``defaults.py`` has
+pre-filled from their account, and so is CSTEP's EMPLID. ``account_defaults.py`` has
 the functions, used as ``defaultFactory`` on those fields. They apply only
 when the form opens, never overwrite a saved application, and leave a field
 blank when the account has no value (anonymous visitors get blanks too).

@@ -19,7 +19,7 @@ from decimal import Decimal
 from plone.dexterity.content import Item
 from plone.supermodel import model
 from c_step_intake import _
-from c_step_intake import defaults
+from c_step_intake import account_defaults
 from c_step_intake.interfaces import IApplication
 from c_step_intake.vocabularies import CLASSIFICATION
 from c_step_intake.vocabularies import DEGREE_TYPE
@@ -78,7 +78,7 @@ class ICstepApplication(model.Schema):
         title=_('EMPLID'),
         description=_('Your 8-digit CUNY EMPLID.'),
         constraint=validate_emplid,
-        defaultFactory=defaults.emplid,
+        defaultFactory=account_defaults.emplid,
         required=True,
     )
 
