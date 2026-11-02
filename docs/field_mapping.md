@@ -129,7 +129,7 @@ or breaking report queries. Full code lists are in
 
 | Plone field | Column | Type | PII |
 |---|---|---|---|
-| `school_name` | `school_name` | `text` | |
+| `school_name` + `school_name_other` | `school_name` | `text` | |
 | `current_grade` | `current_grade` | `integer` | |
 | `cumulative_gpa` | `cumulative_gpa` | `numeric` | |
 | `free_reduced_lunch` | `free_reduced_lunch` | `boolean` | |
@@ -149,6 +149,15 @@ noting for retention and access-control decisions on these columns.
 `cumulative_gpa` maps straight across now that STEP has its own table; there
 is no longer any need for a shared `application_gpa` column aliasing STEP's
 `cumulative_gpa` and CSTEP's `gpa` onto one name.
+
+`school_name` is chosen from a pick-list of NYSED secondary schools
+(`data/step_schools.json`), so it is stored in NYSED reporting format:
+`NAME  (COUNTY) BEDSCODE`, e.g. `YORK EARLY COLLEGE ACADEMY  (QUEENS)
+342800011284`, with two spaces before the county. When the applicant chooses
+"My school isn't listed", the column holds `school_name_other` as typed
+instead, which is **not** in that format; staff should correct it before
+accepting the application. `school_name_other` is therefore listed in
+`field_map.UNMAPPED`.
 
 `current_grade` is written as an integer (7–12) to match the live column. See
 Q9.

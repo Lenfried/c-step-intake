@@ -77,7 +77,8 @@ class TestApplicationWorkflow(unittest.TestCase):
         application = self._application(school_name=None)
         api.content.transition(obj=application, transition='submit')
         api.content.transition(obj=application, transition='request_info')
-        application.school_name = 'York Early College Academy'
+        application.school_name = (
+            'YORK EARLY COLLEGE ACADEMY  (QUEENS) 342800011284')
         api.content.transition(obj=application, transition='resubmit')
         self.assertEqual('manual_review',
                          api.content.get_state(application))

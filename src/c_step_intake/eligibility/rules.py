@@ -77,14 +77,28 @@ REQUIRED_AT_SUBMIT = {
 }
 
 
+#: STEP's school pick-list value meaning "My school isn't listed". Kept as a
+#: literal (vocabularies.SCHOOL_NOT_LISTED) so this module stays Plone-free.
+SCHOOL_NOT_LISTED = 'other'
+
+
+def _blank(value):
+    return value is None or (isinstance(value, str) and not value.strip())
+
+
 def missing_fields(program, payload):
     """Return the required fields that are absent or blank, in schema order."""
-    required = REQUIRED_AT_SUBMIT[program]
-    missing = []
-    for name in required:
-        value = payload.get(name)
-        if value is None or (isinstance(value, str) and not value.strip()):
-            missing.append(name)
+    missing = [name for name in REQUIRED_AT_SUBMIT[program]
+               if _blank(payload.get(name))]
+    # An unlisted school must be named: school_name_other is required then.
+    # Listed right after school_name, to keep schema order.
+    if (program == STEP
+            and payload.get('school_name') == SCHOOL_NOT_LISTED
+            and _blank(payload.get('school_name_other'))):
+        order = REQUIRED_AT_SUBMIT[STEP]
+        after = order.index('school_name')
+        position = sum(1 for name in missing if order.index(name) <= after)
+        missing.insert(position, 'school_name_other')
     return tuple(missing)
 
 

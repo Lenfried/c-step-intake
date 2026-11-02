@@ -5,7 +5,15 @@ Terms carry a stable machine ``value`` and a human ``title``. Only the value is
 persisted and written to PostgreSQL, so option wording can be reworded for
 applicants without invalidating stored records or breaking report queries.
 """
+from functools import lru_cache
+
+import json
+import os
+import re
+
 from c_step_intake import _
+from zope.interface import provider
+from zope.schema.interfaces import IVocabularyFactory
 from zope.schema.vocabulary import SimpleTerm
 from zope.schema.vocabulary import SimpleVocabulary
 
@@ -97,3 +105,59 @@ DEGREE_TYPE = _vocabulary([
     ('bachelors', 'Bachelors'),
     ('masters', 'Masters'),
 ])
+
+
+# --- STEP schools ---------------------------------------------------------
+#
+# The STEP school field is a pick-list so that every value is already in the
+# exact form NYSED reporting expects: "NAME  (COUNTY) BEDSCODE", e.g.
+# "YORK EARLY COLLEGE ACADEMY  (QUEENS) 342800011284" (two spaces before the
+# county, then the 12-digit BEDS code). The stored value is that string,
+# verbatim from data/step_schools.json (NYSED IMF secondary schools, grades
+# 7-12). To update the list, replace that file; saved applications keep the
+# string they were submitted with.
+
+#: Value of the "My school isn't listed" choice; school_name_other then holds
+#: the school's name as typed.
+SCHOOL_NOT_LISTED = 'other'
+
+SCHOOLS_FILE = os.path.join(os.path.dirname(__file__), 'data',
+                            'step_schools.json')
+
+_SCHOOL = re.compile(
+    r'^(?P<name>.+?)  \((?P<county>[A-Z ]+)\) (?P<code>\d{12})$')
+
+
+def parse_school(value):
+    """Return (name, county, BEDS code) of a listed school, or None."""
+    match = _SCHOOL.match(value or '')
+    return match.groups() if match else None
+
+
+@lru_cache(maxsize=1)
+def step_schools():
+    """Build the school vocabulary once; the list only changes on release.
+
+    Token: the BEDS code, unique even where two schools share a name.
+    Title: what applicants see, e.g. "YORK EARLY COLLEGE ACADEMY (Queens)".
+    """
+    with open(SCHOOLS_FILE, encoding='utf-8') as data:
+        boroughs = json.load(data)['boroughs']
+    terms = [SimpleTerm(value=SCHOOL_NOT_LISTED, token=SCHOOL_NOT_LISTED,
+                        title=_('My school isn\u2019t listed'))]
+    for borough in boroughs:
+        for school in borough['schools']:
+            parsed = parse_school(school)
+            if parsed is None:
+                raise ValueError(
+                    'Not in NYSED reporting format: {0!r}'.format(school))
+            name, _county, code = parsed
+            terms.append(SimpleTerm(
+                value=school, token=code,
+                title='{0} ({1})'.format(name, borough['label'])))
+    return SimpleVocabulary(terms)
+
+
+@provider(IVocabularyFactory)
+def StepSchoolsVocabularyFactory(context):
+    return step_schools()

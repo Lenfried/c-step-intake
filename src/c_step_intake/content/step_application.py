@@ -16,9 +16,12 @@ from plone.supermodel import model
 from c_step_intake import _
 from c_step_intake.interfaces import IApplication
 from c_step_intake.vocabularies import GRADE_LEVEL
+from c_step_intake.vocabularies import SCHOOL_NOT_LISTED
 from z3c.form.browser.radio import RadioFieldWidget
 from zope import schema
 from zope.interface import implementer
+from zope.interface import Invalid
+from zope.interface import invariant
 
 
 class IStepApplication(model.Schema):
@@ -27,7 +30,8 @@ class IStepApplication(model.Schema):
     model.fieldset(
         'school',
         label=_('School'),
-        fields=['school_name', 'current_grade', 'cumulative_gpa'],
+        fields=['school_name', 'school_name_other', 'current_grade',
+                'cumulative_gpa'],
     )
 
     model.fieldset(
@@ -57,9 +61,26 @@ class IStepApplication(model.Schema):
         fields=['stem_statement'],
     )
 
-    school_name = schema.TextLine(
+    # A pick-list, so the value is already in NYSED reporting format
+    # ("NAME  (COUNTY) BEDSCODE"); see vocabularies.step_schools.
+    school_name = schema.Choice(
         title=_('School name'),
+        description=_(
+            'Start typing to search. If your school isn\u2019t in the list, '
+            'choose \u201cMy school isn\u2019t listed\u201d and type its name '
+            'below.'
+        ),
+        vocabulary='c_step_intake.StepSchools',
         required=True,
+    )
+
+    school_name_other = schema.TextLine(
+        title=_('School name, if not listed'),
+        description=_(
+            'Only if you chose \u201cMy school isn\u2019t listed\u201d above. '
+            'Include the school\u2019s city or county.'
+        ),
+        required=False,
     )
 
     current_grade = schema.Choice(
@@ -144,6 +165,14 @@ class IStepApplication(model.Schema):
         ),
         required=False,
     )
+
+    @invariant
+    def unlisted_school_is_named(data):
+        if getattr(data, 'school_name', None) == SCHOOL_NOT_LISTED:
+            if not (getattr(data, 'school_name_other', None) or '').strip():
+                raise Invalid(_(
+                    'Please type your school\u2019s name, since you chose '
+                    '\u201cMy school isn\u2019t listed\u201d.'))
 
 
 IStepApplication.setTaggedValue(

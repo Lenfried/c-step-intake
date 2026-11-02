@@ -18,6 +18,7 @@ from plone import api
 from plone.dexterity.utils import iterSchemata
 from plone.uuid.interfaces import IUUID
 from c_step_intake.db import field_map
+from c_step_intake.vocabularies import SCHOOL_NOT_LISTED
 from zope.schema import getFieldsInOrder
 
 
@@ -32,6 +33,13 @@ def to_payload(obj):
         for name, _field in getFieldsInOrder(schemata):
             payload[name] = getattr(obj, name, None)
     return payload
+
+
+def _school_name(obj):
+    school = getattr(obj, 'school_name', None)
+    if school == SCHOOL_NOT_LISTED:
+        return getattr(obj, 'school_name_other', None)
+    return school
 
 
 def _major_at_application(obj):
@@ -95,6 +103,7 @@ DERIVED = {
     'created_date': _created_date,
     'last_update': _last_update,
     'major_at_application': _major_at_application,
+    'school_name': _school_name,
     'accepted_date': _accepted_date,
 }
 
