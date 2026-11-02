@@ -159,6 +159,29 @@ vitest and need no Volto install::
     npx vitest run
 
 
+STEP school list
+================
+
+The STEP form's school field is a searchable pick-list, so the stored value
+is always in NYSED reporting format: ``NAME  (COUNTY) BEDSCODE``, e.g.
+``YORK EARLY COLLEGE ACADEMY  (QUEENS) 342800011284`` (two spaces before the
+county, then the 12-digit BEDS code). Applicants see a readable title, e.g.
+"YORK EARLY COLLEGE ACADEMY (Queens)".
+
+- **List:** ``src/c_step_intake/data/step_schools.json``, NYSED IMF secondary
+  schools (grades 7-12) for the five boroughs and Nassau County, 1,998
+  schools. It is the vocabulary ``c_step_intake.StepSchools``
+  (``vocabularies.step_schools``), keyed by BEDS code.
+- **Not listed:** the first choice is "My school isn't listed". The applicant
+  then types the name in ``school_name_other``, which is required in that case
+  (form check and completeness rule). That value is written to the
+  ``school_name`` column as typed, not in reporting format, so staff should
+  correct it before accepting.
+- **Updating the list:** replace the JSON file, keeping its structure. A test
+  fails if any entry is not in the reporting format or a BEDS code repeats.
+  Saved applications keep the value they were submitted with.
+
+
 Pre-filled identity fields
 ==========================
 

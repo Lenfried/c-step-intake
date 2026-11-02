@@ -111,7 +111,11 @@ APPLICATIONS = (
     # --- STEP only ------------------------------------------------------
     Mapping('free_reduced_lunch', 'boolean', (STEP,),
             field='free_reduced_lunch'),
-    Mapping('school_name', 'text', (STEP,), field='school_name'),
+    Mapping('school_name', 'text', (STEP,),
+            source_fields=('school_name',),
+            note='The listed school in NYSED reporting format ("NAME  '
+                 '(COUNTY) BEDSCODE"), or school_name_other as typed when '
+                 'the school is not listed.'),
     Mapping('current_grade', 'integer', (STEP,), field='current_grade',
             note='Live column is integer; the form only offers 7-12, and '
                  'the serializer writes it as an int. See field_mapping.md '
@@ -164,6 +168,7 @@ APPLICATIONS = (
 #: to appear either in APPLICATIONS or here.
 UNMAPPED = {
     'major_other': 'Merged into major_at_application.',
+    'school_name_other': 'Merged into school_name.',
     'stem_statement': 'STEP condition 3b (STEM need). Read by program staff '
                       'during review in Plone; not stored in step_student.',
 }

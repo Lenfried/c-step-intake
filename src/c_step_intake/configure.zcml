@@ -11,6 +11,12 @@
   <include package=".browser"/>
   <include package=".services"/>
 
+  <!-- Pick-list for the STEP school field; see vocabularies.step_schools. -->
+  <utility
+    component=".vocabularies.StepSchoolsVocabularyFactory"
+    name="c_step_intake.StepSchools"
+  />
+
   <genericsetup:registerProfile
     name="default"
     title="c_step_intake"

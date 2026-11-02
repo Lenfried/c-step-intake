@@ -26,7 +26,7 @@ def step_payload(**overrides):
         'zip_code': '11451',
         'nys_resident': True,
         'household_size': 4,
-        'school_name': 'York Early College Academy',
+        'school_name': 'YORK EARLY COLLEGE ACADEMY  (QUEENS) 342800011284',
         'current_grade': '11',
         'cumulative_gpa': Decimal('88'),
         'parent1_first_name': 'Anne',
