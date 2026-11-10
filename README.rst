@@ -93,6 +93,57 @@ Sites that already have the profile installed need the registry record
 added by re-importing the ``registry`` step of ``c_step_intake:default``.
 
 
+Staff-decision webhook (n8n)
+============================
+
+When staff **accept**, **reject** or **request more information** on an
+application, the add-on POSTs a JSON event to an n8n webhook
+(``webhooks.py``), and n8n emails the student and staff. That covers decisions from
+``manual_review`` and rejecting an application that is waiting for more
+information. The automatic eligibility check fires the same transitions from
+``submitted`` and ``resubmitted``; those are not sent, so n8n only hears about
+human decisions. No other transition sends anything.
+
+The body omits applicant profile fields, but includes the transition comment.
+Staff must not include sensitive applicant information in transition comments.
+The payload is::
+
+    {"event": "application.accept",     # or .reject, .request_info
+     "uid": "<32 hex characters>",
+     "url": "https://.../applications/...",
+     "program": "step",                 # or "cstep"
+     "comment": "<transition comment, trimmed, at most 2000 characters>",
+     "actor": "<staff user id>"}
+
+n8n rejects a payload that breaks those rules, so the add-on checks them
+first and logs an error instead of sending. n8n looks the student up by
+``uid`` through the REST API, using a Plone **service account** that can
+view applications in every state. The narrowest role that can is
+``ProgramStaff``; note it can also request more information and flag
+applications for review, so keep that account's password in n8n only.
+
+The POST is sent only after the transaction commits, with a 5 second timeout
+(after-commit hooks run inside the staff member's request, so a longer
+timeout would make their click hang longer when n8n is down). Network
+errors and non-2xx responses are logged with the object path, the event and
+the HTTP status, never the token; the decision itself always goes through.
+
+Configuration:
+
+- **URL:** registry record ``c_step_intake.n8n_webhook_url``. Empty (the
+  default) turns the webhook off. The URL must use HTTPS; redirects are not
+  followed.
+- **Shared secret:** environment variable
+  ``C_STEP_INTAKE_N8N_WEBHOOK_TOKEN`` on the backend, sent in an
+  ``X-STEP-Token`` header. It must match the n8n Header Auth credential. It is
+  kept out of the registry so it is never stored in the ZODB and site
+  administrators cannot read it. If it is unset, nothing is sent and a
+  warning is logged.
+
+Existing sites need the **1001 upgrade step** (Site Setup -> Add-ons) to get
+the registry record.
+
+
 Enabling CSTEP
 ==============
 

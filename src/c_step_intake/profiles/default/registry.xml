@@ -8,4 +8,12 @@
     </field>
     <value>cstep-n8n@mailings.york.cuny.edu</value>
   </record>
+  <record name="c_step_intake.n8n_webhook_url">
+    <field type="plone.registry.field.TextLine">
+      <title>n8n webhook URL for staff decisions</title>
+      <description>Receives a POST when staff accept, reject or request more information on an application in manual review. Leave empty to turn it off. The shared secret is read from the C_STEP_INTAKE_N8N_WEBHOOK_TOKEN environment variable.</description>
+      <required>False</required>
+    </field>
+    <value></value>
+  </record>
 </registry>
