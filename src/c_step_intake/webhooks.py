@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import urllib.error
+import urllib.parse
 import urllib.request
 
 from plone import api
@@ -37,6 +38,13 @@ MAX_COMMENT_LENGTH = 2000
 UID_PATTERN = re.compile(r'^[0-9a-f]{32}$')
 
 
+class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Keep the shared secret on the configured endpoint."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
 def notify_n8n_on_staff_decision(obj, event):
     """Queue a webhook POST for a staff decision on an application.
 
@@ -66,8 +74,10 @@ def notify_n8n_on_staff_decision(obj, event):
 
 
 def build_payload(obj, event):
-    """The webhook body. Deliberately no applicant details: n8n fetches
-    those from the REST API with its own service account."""
+    """Omit applicant profile fields; n8n fetches them with its service account.
+
+    Staff comments are included and must not contain sensitive information.
+    """
     comment = str((event.kwargs or {}).get('comment') or '').strip()
     current = api.user.get_current()
     return {
@@ -108,14 +118,19 @@ def post_webhook(committed, url, payload, path):
         logger.warning('n8n webhook not sent for %s (%s): %s is not set',
                        path, payload['event'], TOKEN_ENV_VAR)
         return
-    request = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode('utf-8'),
-        method='POST',
-        headers={'Content-Type': 'application/json', TOKEN_HEADER: token},
-    )
     try:
-        urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS).close()
+        if urllib.parse.urlsplit(url).scheme != 'https':
+            logger.error('n8n webhook not sent for %s (%s): URL must use HTTPS',
+                         path, payload['event'])
+            return
+        request = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode('utf-8'),
+            method='POST',
+            headers={'Content-Type': 'application/json', TOKEN_HEADER: token},
+        )
+        opener = urllib.request.build_opener(NoRedirectHandler())
+        opener.open(request, timeout=TIMEOUT_SECONDS).close()
     except urllib.error.HTTPError as error:
         # urllib raises for every non-2xx response.
         logger.error('n8n webhook for %s (%s) was refused: HTTP %s',

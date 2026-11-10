@@ -67,12 +67,12 @@
     handler=".webhooks.notify_n8n_on_staff_decision"
   />
 
-  <genericsetup:upgradeDepends
+  <genericsetup:upgradeStep
     source="1000"
     destination="1001"
     profile="c_step_intake:default"
     title="Add the n8n webhook URL registry record"
-    import_steps="plone.app.registry"
+    handler=".setuphandlers.upgrade_webhook_registry"
   />
 
 </configure>

@@ -8,6 +8,9 @@ from plone.app.testing import setRoles
 from plone.app.testing import TEST_USER_ID
 from plone.dexterity.utils import createContentInContainer
 from c_step_intake import webhooks
+from c_step_intake.setuphandlers import upgrade_webhook_registry
+from plone.registry.interfaces import IRegistry
+from zope.component import getUtility
 from c_step_intake.eligibility.decision import ACCEPT
 from c_step_intake.eligibility.decision import Decision
 from c_step_intake.testing import C_STEP_INTAKE_INTEGRATION_TESTING
@@ -21,7 +24,7 @@ import urllib.error
 
 URL = 'https://n8n.example.edu/webhook/plone-application-decision'
 TOKEN = 's3cret-token'
-URLOPEN = 'c_step_intake.webhooks.urllib.request.urlopen'
+URLOPEN = 'urllib.request.OpenerDirector.open'
 SEND_EMAIL = 'c_step_intake.notifications.api.portal.send_email'
 
 
@@ -91,7 +94,7 @@ class TestStaffDecisionWebhook(unittest.TestCase):
                 self.transition('reopen' if name != 'request_info'
                                 else 'resubmit')
 
-    def test_payload_fields_and_no_applicant_details(self):
+    def test_payload_fields_and_no_applicant_profile_fields(self):
         self.transition('request_info', comment='  Missing transcript  ')
         [payload] = queued_payloads()
         self.assertEqual({
@@ -212,3 +215,53 @@ class TestPostWebhook(unittest.TestCase):
         output = '\n'.join(logs.output)
         self.assertIn(self.path, output)
         self.assertNotIn(TOKEN, output)
+
+    def test_non_https_urls_are_rejected_before_request_construction(self):
+        for url in ('http://example.edu/hook', 'ftp://example.edu/hook',
+                    '//example.edu/hook', '/hook'):
+            with self.subTest(url=url), mock.patch(URLOPEN) as urlopen, \
+                    mock.patch('urllib.request.Request') as request, \
+                    self.assertLogs('c_step_intake', 'ERROR') as logs:
+                webhooks.post_webhook(True, url, self.payload, self.path)
+            request.assert_not_called()
+            urlopen.assert_not_called()
+            self.assertNotIn(TOKEN, '\n'.join(logs.output))
+
+    def test_redirects_are_not_followed(self):
+        # Exercise urllib's real redirect processing without network traffic.
+        from email.message import Message
+        from io import BytesIO
+        from urllib.response import addinfourl
+
+        for status in (301, 302, 303, 307, 308):
+            for target in ('https://other.example.edu/hook',
+                           'http://other.example.edu/hook'):
+                headers = Message()
+                headers['Location'] = target
+                response = addinfourl(BytesIO(b''), headers, URL, status)
+                response.msg = 'Redirect'
+                with self.subTest(status=status, target=target), \
+                        mock.patch('urllib.request.HTTPSHandler.https_open',
+                                   return_value=response) as send, \
+                        self.assertLogs('c_step_intake', 'ERROR') as logs:
+                    self.post()
+                self.assertEqual(1, send.call_count)
+                self.assertIn('HTTP ' + str(status), '\n'.join(logs.output))
+                self.assertNotIn(TOKEN, '\n'.join(logs.output))
+
+
+class TestWebhookUpgrade(unittest.TestCase):
+
+    layer = C_STEP_INTAKE_INTEGRATION_TESTING
+
+    def test_upgrade_preserves_custom_and_disabled_email(self):
+        registry = getUtility(IRegistry)
+        key = 'c_step_intake.notification_email'
+        for value in ('staff@example.edu', '', None):
+            with self.subTest(value=value):
+                registry[key] = value
+                del registry.records[webhooks.URL_REGISTRY_KEY]
+                upgrade_webhook_registry(self.layer['portal'].portal_setup)
+                self.assertEqual(value, registry[key])
+                self.assertIn(webhooks.URL_REGISTRY_KEY, registry)
+                self.assertIsNone(registry[webhooks.URL_REGISTRY_KEY])

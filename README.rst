@@ -104,7 +104,9 @@ information. The automatic eligibility check fires the same transitions from
 ``submitted`` and ``resubmitted``; those are not sent, so n8n only hears about
 human decisions. No other transition sends anything.
 
-The body has no applicant details (FERPA)::
+The body omits applicant profile fields, but includes the transition comment.
+Staff must not include sensitive applicant information in transition comments.
+The payload is::
 
     {"event": "application.accept",     # or .reject, .request_info
      "uid": "<32 hex characters>",
@@ -129,7 +131,8 @@ the HTTP status, never the token; the decision itself always goes through.
 Configuration:
 
 - **URL:** registry record ``c_step_intake.n8n_webhook_url``. Empty (the
-  default) turns the webhook off.
+  default) turns the webhook off. The URL must use HTTPS; redirects are not
+  followed.
 - **Shared secret:** environment variable
   ``C_STEP_INTAKE_N8N_WEBHOOK_TOKEN`` on the backend, sent in an
   ``X-STEP-Token`` header. It must match the n8n Header Auth credential. It is
